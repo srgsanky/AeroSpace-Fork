@@ -72,7 +72,11 @@ extension Window {
     fileprivate func layoutFloatingWindow(_ context: LayoutContext) async throws {
         let workspace = context.workspace
         if isAccent {
-            let frame = accentFrame(in: workspace.workspaceMonitor.visibleRectPaddedByOuterGaps)
+            let frame = accentFrame(
+                in: workspace.workspaceMonitor.visibleRectPaddedByOuterGaps,
+                widthRatio: config.accentWidthRatio,
+                heightRatio: config.accentHeightRatio,
+            )
             lastFloatingSize = frame.size
             setAxFrame(frame.topLeftCorner, frame.size)
             return
@@ -110,12 +114,13 @@ extension Window {
     }
 }
 
-func accentFrame(in area: Rect) -> Rect {
-    Rect(
-        topLeftX: area.minX + area.width / 6,
+func accentFrame(in area: Rect, widthRatio: Double, heightRatio: Double) -> Rect {
+    let width = area.width * widthRatio
+    return Rect(
+        topLeftX: area.minX + (area.width - width) / 2,
         topLeftY: area.minY,
-        width: area.width * 2 / 3,
-        height: area.height * 2 / 3,
+        width: width,
+        height: area.height * heightRatio,
     )
 }
 

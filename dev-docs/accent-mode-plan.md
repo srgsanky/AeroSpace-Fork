@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add a focused-window `accent` toggle to AeroSpace. An accented window floats over the tiled workspace in the top-center two-thirds of the usable monitor area.
+Add a focused-window `accent` toggle to AeroSpace. An accented window floats over the tiled workspace in the top-center of the usable monitor area. Its width and height default to two-thirds of that area and can be configured independently.
 
 The default binding will be:
 
@@ -57,16 +57,16 @@ Accent state is per-window. Multiple windows may be accented simultaneously and 
 
 Use the workspace monitor's `visibleRectPaddedByOuterGaps` as the available rectangle. This respects the menu bar, Dock, and configured AeroSpace outer gaps.
 
-For an available rectangle `area`, calculate:
+The `accent-width-percent` and `accent-height-percent` config options accept integer percentages from 1 through 100. If omitted, each dimension retains its exact two-thirds default. For an available rectangle `area`, calculate:
 
 ```text
-x      = area.minX + area.width / 6
+width  = area.width * widthRatio
+height = area.height * heightRatio
+x      = area.minX + (area.width - width) / 2
 y      = area.minY
-width  = area.width * 2 / 3
-height = area.height * 2 / 3
 ```
 
-On the 1920x1080 test monitor with no outer gaps, the expected frame is:
+On the 1920x1080 test monitor with no outer gaps and the default ratios, the expected frame is:
 
 ```text
 x      = 320
@@ -90,11 +90,13 @@ In normal layout state, an accented window should belong to a `FloatingWindowsCo
 
 ### 2. Add accent layout behavior
 
+Add `accent-width-percent` and `accent-height-percent` to `Sources/AppBundle/config/Config.swift` and `Sources/AppBundle/config/parseConfig.swift`. Store the resulting ratios with exact two-thirds fallbacks and validate configured integer percentages in the 1 through 100 range.
+
 Update `Sources/AppBundle/layout/layoutRecursive.swift`:
 
 - At the beginning of `Window.layoutFloatingWindow`, check `isAccent`.
 - For an accented window:
-  - Calculate the frame from its workspace monitor.
+  - Calculate the frame from its workspace monitor and the configured width and height percentages.
   - Set `lastFloatingSize` to the calculated size.
   - Apply both position and size through `setAxFrame`.
   - Return without running ordinary floating relocation logic.
@@ -193,19 +195,20 @@ Cover the following cases:
    - Sets `isAccent`.
    - Leaves the other window as the sole tiled window.
    - Preserves focus.
-5. A layout pass applies the expected 1920x1080 accent frame.
-6. Toggling the same window again:
+5. A layout pass applies the expected default 1920x1080 accent frame.
+6. Configured width and height percentages are applied while keeping the window horizontally centered and top-aligned.
+7. Toggling the same window again:
    - Clears `isAccent`.
    - Removes it from the floating container.
    - Returns it to the tiling tree.
-7. An ordinary floating window becomes accented, then becomes tiled on the next toggle.
-8. Two windows can be accented simultaneously without either being automatically restored.
-9. `layout tiling` clears accent state.
-10. `--window-id` can accent a non-focused window without changing focus.
-11. An empty workspace reports `No window is focused`.
-12. Unconventional windows fail without changing their state or parent.
-13. A later layout pass restores an accented window that was moved away from its accent frame.
-14. Ordinary non-accented floating windows retain existing layout behavior.
+8. An ordinary floating window becomes accented, then becomes tiled on the next toggle.
+9. Two windows can be accented simultaneously without either being automatically restored.
+10. `layout tiling` clears accent state.
+11. `--window-id` can accent a non-focused window without changing focus.
+12. An empty workspace reports `No window is focused`.
+13. Unconventional windows fail without changing their state or parent.
+14. A later layout pass restores an accented window that was moved away from its accent frame.
+15. Ordinary non-accented floating windows retain existing layout behavior.
 
 Do not assert an exact tree index after returning to tiling; normal AeroSpace MRU insertion behavior owns that decision.
 
@@ -220,7 +223,7 @@ Create `docs/aerospace-accent.adoc` containing:
   ```
 
 - Toggle semantics.
-- Exact geometry.
+- Default and configurable geometry.
 - The fact that remaining tiled windows rebalance.
 - Ordinary floating windows return to tiling after the second toggle.
 - Multiple accented windows may overlap.

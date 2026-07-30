@@ -146,6 +146,8 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     "auto-reload-config": Parser(\.autoReloadConfig, parseBool),
     "automatically-unhide-macos-hidden-apps": Parser(\.automaticallyUnhideMacosHiddenApps, parseBool),
     "accordion-padding": Parser(\.accordionPadding, parseInt),
+    "accent-width-percent": Parser(\.accentWidthRatio, parsePercentage),
+    "accent-height-percent": Parser(\.accentHeightRatio, parsePercentage),
     persistentWorkspacesKey: Parser(\.persistentWorkspaces, parsePersistentWorkspaces),
     "exec-on-workspace-change": Parser(\.execOnWorkspaceChange, parseArrayOfStrings),
     "exec": Parser(\.execConfig, parseExecConfig),
@@ -327,6 +329,15 @@ func parseConfigVersion(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> Res
 
 func parseInt(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> ResOrConfigParseDiagnostic<Int> {
     raw.asIntOrNil.toResult(expectedActualTypeDiagnostic(expected: .int, actual: raw.tomlType, backtrace))
+}
+
+func parsePercentage(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> ResOrConfigParseDiagnostic<Double> {
+    parseInt(raw, backtrace).flatMap { percentage in
+        guard (1 ... 100).contains(percentage) else {
+            return .failure(.init(backtrace, "Percentage must be in [1, 100] range"))
+        }
+        return .success(Double(percentage) / 100)
+    }
 }
 
 func parseString(_ raw: OrderedJson, _ backtrace: ConfigBacktrace) -> ResOrConfigParseDiagnostic<String> {

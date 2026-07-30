@@ -26,6 +26,11 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 # You can set 0 to disable the padding feature
 accordion-padding = 30
 
+# Accent windows use two-thirds of the usable monitor size by default.
+# Uncomment to set the width and height as percentages in the range 1–100.
+# accent-width-percent = 75
+# accent-height-percent = 80
+
 # Possible values: tiles|accordion
 default-root-container-layout = 'tiles'
 

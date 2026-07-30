@@ -29,6 +29,27 @@ final class ConfigTest: XCTestCase {
         assertEquals(result.warnings, [])
     }
 
+    func testParseAccentSizePercentages() {
+        let result = parseConfig(
+            """
+            accent-width-percent = 75
+            accent-height-percent = 80
+            """,
+        )
+        assertEquals(result.errors, [])
+        assertEquals(result.config.accentWidthRatio, 0.75)
+        assertEquals(result.config.accentHeightRatio, 0.8)
+    }
+
+    func testAccentSizePercentageOutOfBounds() {
+        let result = parseConfig(
+            """
+            accent-width-percent = 0
+            """,
+        )
+        assertEquals(result.strErrors, ["[ERROR] accent-width-percent: Percentage must be in [1, 100] range"])
+    }
+
     func testConfigVersionOutOfBounds() {
         let result = parseConfig(
             """

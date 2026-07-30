@@ -48,6 +48,23 @@ final class AccentCommandTest: XCTestCase {
         assertEquals(window.lastFloatingSize?.height, 720)
     }
 
+    func testLayoutUsesConfiguredAccentSize() async throws {
+        config.accentWidthRatio = 0.75
+        config.accentHeightRatio = 0.8
+        let workspace = Workspace.get(byName: name)
+        let window = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)
+        assertEquals(window.focusWindow(), true)
+
+        await parseCommand("accent").cmdOrDie.run(.defaultEnv, .emptyStdin)
+        try await workspace.layoutWorkspace()
+
+        let rect = try await window.getAxRect(.nonCancellable)
+        assertEquals(rect?.topLeftX, 240)
+        assertEquals(rect?.topLeftY, 0)
+        assertEquals(rect?.width, 1440)
+        assertEquals(rect?.height, 864)
+    }
+
     func testToggleAccentBackToTiling() async {
         let workspace = Workspace.get(byName: name)
         let window = TestWindow.new(id: 1, parent: workspace.rootTilingContainer)

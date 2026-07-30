@@ -19,16 +19,26 @@ aerospace accent [-h|--help] [--window-id <window-id>]
 // tag::body[]
 {manpurpose}
 
-An accented window floats over the tiled workspace in the top-center two-thirds of the usable monitor area. The usable area is the workspace monitor's visible rectangle after AeroSpace outer gaps are applied. For that rectangle, `area`, the accent frame is:
+An accented window floats at the top-center of the usable monitor area. The usable area is the workspace monitor's visible rectangle after AeroSpace outer gaps are applied. Its width and height default to two-thirds of that area, so the default frame on a 1920x1080 monitor with no outer gaps is 1280x720 at position (320, 0).
+
+Set `accent-width-percent` and `accent-height-percent` to integer percentages from 1 through 100 to customize the dimensions. Either setting may be omitted to retain its two-thirds default:
+
+[source,toml]
+----
+accent-width-percent = 75
+accent-height-percent = 80
+----
+
+For an available rectangle, `area`, the configured frame is:
 
 ----
-x      = area.minX + area.width / 6
-y      = area.minY
-width  = area.width * 2 / 3
-height = area.height * 2 / 3
+widthRatio  = accent-width-percent / 100, or 2 / 3 when omitted
+heightRatio = accent-height-percent / 100, or 2 / 3 when omitted
+width       = area.width * widthRatio
+height      = area.height * heightRatio
+x           = area.minX + (area.width - width) / 2
+y           = area.minY
 ----
-
-For example, the frame on a 1920x1080 monitor with no outer gaps is 1280x720 at position (320, 0).
 
 Running `accent` on a tiled or ordinary floating window makes it accented and floating. Removing a tiled window from the tiling tree causes the remaining tiled windows to rebalance normally.
 
