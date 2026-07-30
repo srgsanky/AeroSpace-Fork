@@ -130,6 +130,23 @@ extension Monitor {
     func setActiveWorkspace(_ workspace: Workspace) -> Bool {
         rect.topLeftCorner.setActiveWorkspace(workspace)
     }
+
+    @MainActor
+    func swapActiveWorkspace(with other: Monitor) -> Bool {
+        let ownPoint = rect.topLeftCorner
+        let otherPoint = other.rect.topLeftCorner
+        if ownPoint == otherPoint { return true }
+
+        let ownWorkspace = activeWorkspace
+        let otherWorkspace = other.activeWorkspace
+        guard isValidAssignment(workspace: ownWorkspace, screen: otherPoint),
+              isValidAssignment(workspace: otherWorkspace, screen: ownPoint)
+        else { return false }
+
+        check(other.setActiveWorkspace(ownWorkspace))
+        check(setActiveWorkspace(otherWorkspace))
+        return true
+    }
 }
 
 @MainActor

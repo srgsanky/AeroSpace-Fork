@@ -9,9 +9,9 @@ include::util/man-attributes.adoc[]
 == Synopsis
 [verse]
 // tag::synopsis[]
-aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--wrap-around] (left|down|up|right)
-aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--wrap-around] (next|prev)
-aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--] <monitor-pattern>...
+aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--swap] [--wrap-around] (left|down|up|right)
+aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--swap] [--wrap-around] (next|prev)
+aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--swap] [--] <monitor-pattern>...
 
 // end::synopsis[]
 
@@ -22,12 +22,15 @@ aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--] <
 {manpurpose}
 Focus follows the focused workspace, so the workspace stays focused.
 
-The command fails for workspaces xref:guide.adoc#assign-workspaces-to-monitors[that have monitor force assignment].
+Without `--swap`, the command fails when the moved workspace's xref:guide.adoc#assign-workspaces-to-monitors[monitor force assignment] disallows the destination.
+With `--swap`, both workspace assignments are validated before either workspace is moved, so a disallowed assignment fails without changing either monitor.
 
 // =========================================================== Options
 include::./util/conditional-options-header.adoc[]
 
 -h, --help:: Print help
+--swap:: Exchange the moved workspace with the target monitor's active workspace instead of replacing the source monitor's workspace with an invisible stub workspace.
+The workspace being moved must be visible.
 --wrap-around:: Allows to move workspace between first and last monitors
 
 --workspace <workspace>::
@@ -47,6 +50,15 @@ Move the workspace to next or prev monitor.
 Find the first matching monitor and move the workspace there.
 Multiple monitor patterns is useful for different monitor configurations.
 Monitor patterns follow the same format as in `workspace-to-monitor-force-assignment` config option
+
+The default configuration swaps the focused workspace with the next monitor's active workspace:
+
+[source,toml]
+----
+alt-shift-tab = 'move-workspace-to-monitor --swap --wrap-around next'
+----
+
+Existing configuration files must update this binding manually.
 
 // end::body[]
 

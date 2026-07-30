@@ -15,7 +15,19 @@ struct MoveWorkspaceToMonitorCommand: Command {
                 if targetMonitor.monitorId_oneBased == prevMonitor.monitorId_oneBased {
                     return .succ
                 }
-                if targetMonitor.setActiveWorkspace(focusedWorkspace) {
+                if args.swap {
+                    guard focusedWorkspace.isVisible else {
+                        return .fail(io.err("Can't swap invisible workspace '\(focusedWorkspace.name)'"))
+                    }
+                    let targetWorkspace = targetMonitor.activeWorkspace
+                    if prevMonitor.swapActiveWorkspace(with: targetMonitor) {
+                        return .succ
+                    } else {
+                        return .fail(io.err(
+                            "Can't swap workspace '\(focusedWorkspace.name)' with workspace '\(targetWorkspace.name)'. workspace-to-monitor-force-assignment doesn't allow it",
+                        ))
+                    }
+                } else if targetMonitor.setActiveWorkspace(focusedWorkspace) {
                     let stubWorkspace = getStubWorkspace(for: prevMonitor)
                     check(
                         prevMonitor.setActiveWorkspace(stubWorkspace),

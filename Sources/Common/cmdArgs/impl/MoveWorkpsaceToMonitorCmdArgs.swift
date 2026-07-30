@@ -5,6 +5,7 @@ public struct MoveWorkspaceToMonitorCmdArgs: CmdArgs {
         kind: .moveWorkspaceToMonitor,
         help: move_workspace_to_monitor_help_generated,
         flags: [
+            "--swap": trueBoolFlag(\.swap),
             "--wrap-around": trueBoolFlag(\.wrapAround),
             "--workspace": workspaceSubArgParser(),
         ],
@@ -14,6 +15,7 @@ public struct MoveWorkspaceToMonitorCmdArgs: CmdArgs {
         ],
     )
 
+    public var swap: Bool = false
     public var wrapAround: Bool = false
     public var target: Lateinit<MonitorTarget> = .uninitialized
 }
