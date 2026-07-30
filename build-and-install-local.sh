@@ -107,6 +107,29 @@ install_missing_build_dependencies() {
     fi
 }
 
+select_full_xcode() {
+    local developer_dir="${DEVELOPER_DIR:-}"
+    local candidate
+
+    if [[ -z "$developer_dir" ]]; then
+        developer_dir="$(xcode-select -p 2>/dev/null || true)"
+    fi
+    if [[ -d "$developer_dir/Platforms/MacOSX.platform" ]]; then
+        export DEVELOPER_DIR="$developer_dir"
+        return
+    fi
+
+    for candidate in /Applications/Xcode.app/Contents/Developer /Applications/Xcode*.app/Contents/Developer; do
+        if [[ -d "$candidate/Platforms/MacOSX.platform" ]]; then
+            export DEVELOPER_DIR="$candidate"
+            echo "Full Xcode is not selected; using $DEVELOPER_DIR for this build."
+            return
+        fi
+    done
+
+    fail "full Xcode is required but was not found. Install Xcode from the App Store, then rerun this script."
+}
+
 if ((rebuild)); then
     if [[ -n "$(git status --porcelain)" ]]; then
         git status --short >&2
@@ -120,6 +143,8 @@ if ((rebuild)); then
     require_command fish "Automatic Homebrew installation failed; try: brew install fish"
     require_command ruby "Automatic Homebrew installation failed; try: brew install ruby@3.4"
     require_command bundler "Ruby was installed, but Bundler is unavailable; try: $(brew --prefix ruby@3.4)/bin/gem install bundler"
+
+    select_full_xcode
     require_command xcodebuild "Install Xcode from the App Store."
 
     ruby_major="$(ruby -e 'print RUBY_VERSION.split(".").first')"
@@ -127,12 +152,8 @@ if ((rebuild)); then
         fail "Ruby 3 is required, but $(ruby --version) is active. Install ruby@3.4 and put its bin directory first in PATH."
     fi
 
-    developer_dir="$(xcode-select -p 2>/dev/null || true)"
-    if [[ ! -d "$developer_dir/Platforms/MacOSX.platform" ]]; then
-        fail "full Xcode is not selected. Run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer"
-    fi
     if ! xcodebuild -version >/dev/null 2>&1; then
-        fail "Xcode is not ready. Run: sudo xcodebuild -license accept && sudo xcodebuild -runFirstLaunch"
+        fail "Xcode is not ready. Run: sudo \"$DEVELOPER_DIR/usr/bin/xcodebuild\" -license accept && sudo \"$DEVELOPER_DIR/usr/bin/xcodebuild\" -runFirstLaunch"
     fi
 
     if ! grep -Fq 'aerospace-codesign-certificate' <<< "$(security find-identity -v -p codesigning)"; then

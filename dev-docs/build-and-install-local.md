@@ -6,17 +6,18 @@ Use the repository's `build-and-install-local.sh` helper to build the committed 
 
 ## One-time setup
 
-### 1. Install and select Xcode
+### 1. Install Xcode
 
-Install the full Xcode application from the App Store, then run:
+Install the full Xcode application from the App Store. The helper automatically uses an installation under `/Applications` for the build, even when `xcode-select` points to the standalone Command Line Tools.
+
+Initialize a new Xcode installation once:
 
 ```bash
-sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
-sudo xcodebuild -license accept
-sudo xcodebuild -runFirstLaunch
+sudo /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -license accept
+sudo /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -runFirstLaunch
 ```
 
-Selecting only the Command Line Tools is insufficient for the signed release build.
+The full Xcode application is required for the signed release build; the standalone Command Line Tools are insufficient.
 
 ### 2. Install build dependencies
 
