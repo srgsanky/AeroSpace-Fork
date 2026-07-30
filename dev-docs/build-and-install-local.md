@@ -68,13 +68,17 @@ The release app and CLI must be signed. In **Keychain Access**:
 2. Set the name to `aerospace-codesign-certificate`.
 3. Set **Identity Type** to **Self-Signed Root**.
 4. Set **Certificate Type** to **Code Signing**.
-5. Create the certificate in your login keychain.
+5. Create the certificate in your **login** keychain.
+6. Under **login → My Certificates**, double-click the new certificate and expand **Trust**.
+7. Set **Code Signing** (or **When using this certificate**) to **Always Trust**, close the window, and authenticate when prompted.
 
-Confirm that macOS recognizes the identity:
+Confirm that macOS recognizes the certificate and its private key as a valid identity:
 
 ```bash
-security find-identity -v -p codesigning | grep aerospace-codesign-certificate
+security find-identity -v -p codesigning
 ```
+
+The output must list `aerospace-codesign-certificate` and end with `1 valid identities found`.
 
 ## Build and install
 
@@ -175,7 +179,13 @@ ruby --version
 
 ### Signing identity is missing
 
-Recreate the certificate with the exact name `aerospace-codesign-certificate` and type **Code Signing**. A similarly named ordinary certificate cannot sign the app.
+If `security find-identity -v -p codesigning` reports `0 valid identities found`, check the certificate in **Keychain Access → login → My Certificates**:
+
+- Its exact name must be `aerospace-codesign-certificate` and its type must be **Code Signing**.
+- Expanding the certificate must show its private key. A certificate without the matching private key is not a signing identity.
+- Its **Trust** settings must allow code signing; set **Code Signing** (or **When using this certificate**) to **Always Trust**.
+
+This result normally indicates a certificate, private-key, or trust-setting problem—not a terminal application's permission to access Keychain. Recreate the certificate by following the steps above if any of these checks fail.
 
 ### The old version is still running
 
