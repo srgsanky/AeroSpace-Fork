@@ -11,10 +11,7 @@ fi
 
 add-optional-dep-to-bin() {
     if /usr/bin/which "$1" &> /dev/null; then
-        /bin/cat > ".deps/bin/${2:-$1}" <<EOF
-#!/bin/bash
-exec '$(/usr/bin/which "$1")' "\$@"
-EOF
+        /bin/ln -s "$(/usr/bin/which "$1")" ".deps/bin/${2:-$1}"
     fi
 }
 
@@ -35,7 +32,6 @@ if /bin/test -z "${NUKE_PATH:-}"; then
     add-optional-dep-to-bin swiftly
 
     export PATH="${PWD}/.deps/bin:/bin:/usr/bin"
-    chmod +x .deps/bin/*
     export NUKE_PATH=1
 fi
 
