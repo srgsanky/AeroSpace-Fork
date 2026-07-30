@@ -107,6 +107,18 @@ install_missing_build_dependencies() {
     fi
 }
 
+initialize_swiftly() {
+    if swiftly run swift --version >/dev/null 2>&1; then
+        return
+    fi
+
+    echo "Initializing Swiftly and installing the Swift version from .swift-version..."
+    swiftly init --skip-install --assume-yes --no-modify-profile --quiet-shell-followup || \
+        fail "Swiftly initialization failed; try: swiftly init --skip-install --assume-yes && swiftly install"
+    swiftly install || fail "Swiftly could not install the Swift version from .swift-version; try: swiftly install"
+    swiftly run swift --version >/dev/null 2>&1 || fail "Swiftly is initialized, but the configured Swift toolchain is unavailable."
+}
+
 select_full_xcode() {
     local developer_dir="${DEVELOPER_DIR:-}"
     local candidate
@@ -139,6 +151,7 @@ if ((rebuild)); then
     install_missing_build_dependencies
 
     require_command swiftly "Automatic Homebrew installation failed; try: brew install swiftly"
+    initialize_swiftly
     require_command cargo "Automatic Homebrew installation failed; try: brew install rust"
     require_command fish "Automatic Homebrew installation failed; try: brew install fish"
     require_command ruby "Automatic Homebrew installation failed; try: brew install ruby@3.4"

@@ -35,7 +35,11 @@ To install the dependencies ahead of time, run:
 
 ```bash
 brew install swiftly bash fish ruby@3.4 rust
+swiftly init --skip-install --assume-yes
+swiftly install
 ```
+
+If Swiftly is installed but not initialized, the helper runs these initialization commands automatically and installs the Swift version pinned in `.swift-version`.
 
 `xcbeautify` is optional and makes Xcode output easier to read:
 
@@ -53,7 +57,7 @@ export PATH="/opt/homebrew/opt/ruby@3.4/bin:/opt/homebrew/bin:$PATH"
 bash --version    # Must be 5 or newer
 ruby --version    # Must be 3.x
 cargo --version
-swiftly --version
+swiftly run swift --version
 ```
 
 On an Intel Mac, Homebrew normally uses `/usr/local` rather than `/opt/homebrew`. `build-and-install-local.sh` discovers the active Homebrew prefix automatically.
@@ -166,6 +170,18 @@ Then confirm `bash --version` reports version 5 or newer.
 ### A Homebrew dependency fails to install
 
 The helper prints the exact `brew install` command it is running. Resolve the reported Homebrew error and rerun the helper; already installed formulas will not be reinstalled.
+
+### Swiftly is not initialized
+
+The helper initializes Swiftly and installs the version pinned in `.swift-version` automatically. To repair the setup manually, run:
+
+```bash
+swiftly init --skip-install --assume-yes
+swiftly install
+swiftly run swift --version
+```
+
+The first download can be large. Subsequent builds reuse the installed toolchain.
 
 ### Ruby does not satisfy the Gemfile
 
