@@ -5,6 +5,7 @@ open class Window: TreeNode, Hashable {
     let windowId: UInt32
     let app: any AbstractApp
     var lastFloatingSize: CGSize?
+    var isAccent: Bool = false
     var isFullscreen: Bool = false
     var noOuterGapsInFullscreen: Bool = false
     var layoutReason: LayoutReason = .standard
@@ -65,6 +66,13 @@ extension Window {
     @MainActor
     func bindAsFloatingWindow(to workspace: Workspace) -> BindingData? {
         bind(to: workspace.floatingWindowsContainer, adaptiveWeight: WEIGHT_AUTO, index: INDEX_BIND_LAST)
+    }
+
+    @MainActor
+    func returnToTiling(on workspace: Workspace, _ cm: CancellationMode) async throws {
+        lastFloatingSize = (try? await getAxSize(cm)) ?? lastFloatingSize
+        isAccent = false
+        try await relayoutWindow(on: workspace, cm, forceTile: true)
     }
 
     func asMacWindow() -> MacWindow { self as! MacWindow }

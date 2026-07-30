@@ -1,4 +1,3 @@
-import AppKit
 import Common
 
 struct LayoutCommand: Command {
@@ -63,10 +62,9 @@ struct LayoutCommand: Command {
                     case .tilingContainer:
                         return .succ // Nothing to do
                     case .floatingWindowsContainer(let container):
-                        window.lastFloatingSize = (try? await window.getAxSize(.nonCancellable)) ?? window.lastFloatingSize
                         guard let workspace = container.nodeWorkspace else { return .fail(io.err(bugPrompt())) }
                         do {
-                            try await window.relayoutWindow(on: workspace, .nonCancellable, forceTile: true)
+                            try await window.returnToTiling(on: workspace, .nonCancellable)
                         } catch {
                             return .fail(io.err(bugPrompt()))
                         }

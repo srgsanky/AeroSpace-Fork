@@ -71,6 +71,12 @@ extension Window {
     @MainActor
     fileprivate func layoutFloatingWindow(_ context: LayoutContext) async throws {
         let workspace = context.workspace
+        if isAccent {
+            let frame = accentFrame(in: workspace.workspaceMonitor.visibleRectPaddedByOuterGaps)
+            lastFloatingSize = frame.size
+            setAxFrame(frame.topLeftCorner, frame.size)
+            return
+        }
         let windowRect = try await getAxRect(.cancellable) // Probably not idempotent
         let currentMonitor = windowRect?.center.monitorApproximation
         if let currentMonitor, let windowRect, workspace != currentMonitor.activeWorkspace {
@@ -102,6 +108,15 @@ extension Window {
             : context.workspace.workspaceMonitor.visibleRectPaddedByOuterGaps
         setAxFrame(monitorRect.topLeftCorner, CGSize(width: monitorRect.width, height: monitorRect.height))
     }
+}
+
+func accentFrame(in area: Rect) -> Rect {
+    Rect(
+        topLeftX: area.minX + area.width / 6,
+        topLeftY: area.minY,
+        width: area.width * 2 / 3,
+        height: area.height * 2 / 3,
+    )
 }
 
 extension TilingContainer {

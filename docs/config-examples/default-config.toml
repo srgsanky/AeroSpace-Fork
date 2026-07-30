@@ -113,6 +113,9 @@ gaps.outer.right =      0
     alt-slash = 'layout tiles horizontal vertical'
     alt-comma = 'layout accordion horizontal vertical'
 
+    # See: https://nikitabobko.github.io/AeroSpace/commands#accent
+    alt-shift-space = 'accent'
+
     # See: https://nikitabobko.github.io/AeroSpace/commands#focus
     alt-h = 'focus left'
     alt-j = 'focus down'

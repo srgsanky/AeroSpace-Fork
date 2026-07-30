@@ -8,6 +8,8 @@ extension CmdArgs {
                 command = FalseCommand(args: self as! FalseCmdArgs)
             case ._true:
                 command = TrueCommand(args: self as! TrueCmdArgs)
+            case .accent:
+                command = AccentCommand(args: self as! AccentCmdArgs)
             case .balanceSizes:
                 command = BalanceSizesCommand(args: self as! BalanceSizesCmdArgs)
             case .close:

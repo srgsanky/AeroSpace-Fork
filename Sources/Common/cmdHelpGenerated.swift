@@ -1,6 +1,9 @@
 // FILE IS GENERATED FROM docs/aerospace-*.adoc files
 // TO REGENERATE THE FILE RUN generate.sh
 
+let accent_help_generated = """
+    USAGE: accent [-h|--help] [--window-id <window-id>]
+    """
 let balance_sizes_help_generated = """
     USAGE: balance-sizes [-h|--help] [--workspace <workspace>]
     """

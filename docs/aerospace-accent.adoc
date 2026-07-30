@@ -1,0 +1,58 @@
+= aerospace-accent(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-accent
+// tag::purpose[]
+:manpurpose: Toggle accent mode for the focused window
+// end::purpose[]
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace accent [-h|--help] [--window-id <window-id>]
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+An accented window floats over the tiled workspace in the top-center two-thirds of the usable monitor area. The usable area is the workspace monitor's visible rectangle after AeroSpace outer gaps are applied. For that rectangle, `area`, the accent frame is:
+
+----
+x      = area.minX + area.width / 6
+y      = area.minY
+width  = area.width * 2 / 3
+height = area.height * 2 / 3
+----
+
+For example, the frame on a 1920x1080 monitor with no outer gaps is 1280x720 at position (320, 0).
+
+Running `accent` on a tiled or ordinary floating window makes it accented and floating. Removing a tiled window from the tiling tree causes the remaining tiled windows to rebalance normally.
+
+Running `accent` again on an accented window clears accent mode and returns the window to tiling. An ordinary floating window therefore returns to tiling after the second toggle. The exact prior tiling position and weight are not restored.
+
+Accent state is per-window. Multiple windows can be accented simultaneously and may overlap.
+
+The following example binds accent mode to alt-shift-space:
+
+[source,toml]
+----
+[mode.main.binding]
+alt-shift-space = 'accent'
+----
+
+// =========================================================== Options
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--window-id <window-id>::
+include::./util/window-id-flag-desc.adoc[]
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

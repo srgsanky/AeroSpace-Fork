@@ -5,6 +5,13 @@ include::util/header.adoc[]
 
 Commands documentation is also available as manpages.
 
+== accent
+----
+include::aerospace-accent.adoc[tags=synopsis]
+----
+include::aerospace-accent.adoc[tags=purpose]
+include::aerospace-accent.adoc[tags=body]
+
 == balance-sizes
 ----
 include::aerospace-balance-sizes.adoc[tags=synopsis]
