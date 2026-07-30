@@ -23,14 +23,15 @@ aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--swa
 Focus follows the focused workspace, so the workspace stays focused.
 
 Without `--swap`, the command fails when the moved workspace's xref:guide.adoc#assign-workspaces-to-monitors[monitor force assignment] disallows the destination.
-With `--swap`, both workspace assignments are validated before either workspace is moved, so a disallowed assignment fails without changing either monitor.
+When exactly two monitors are connected, `--swap` validates both workspace assignments before either workspace is moved, so a disallowed assignment fails without changing either monitor.
 
 // =========================================================== Options
 include::./util/conditional-options-header.adoc[]
 
 -h, --help:: Print help
---swap:: Exchange the moved workspace with the target monitor's active workspace instead of replacing the source monitor's workspace with an invisible stub workspace.
-The workspace being moved must be visible.
+--swap:: When exactly two monitors are connected, exchange the moved workspace with the target monitor's active workspace instead of replacing the source monitor's workspace with an invisible stub workspace.
+In that case, the workspace being moved must be visible.
+With any other number of monitors, this option uses the normal move behavior.
 --wrap-around:: Allows to move workspace between first and last monitors
 
 --workspace <workspace>::
@@ -51,7 +52,7 @@ Find the first matching monitor and move the workspace there.
 Multiple monitor patterns is useful for different monitor configurations.
 Monitor patterns follow the same format as in `workspace-to-monitor-force-assignment` config option
 
-The default configuration swaps the focused workspace with the next monitor's active workspace:
+The default configuration swaps the focused workspace with the other monitor when exactly two monitors are connected, and uses the normal move behavior otherwise:
 
 [source,toml]
 ----

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Change the default `alt-shift-tab` workflow from moving the current workspace to the next monitor to swapping it with the next monitor's active workspace.
+Change the default `alt-shift-tab` workflow to swap the current workspace with the other monitor's active workspace when exactly two monitors are connected. Keep the existing move behavior for other monitor counts.
 
 Preserve the existing `move-workspace-to-monitor` behavior for scripts and existing configurations by adding an opt-in `--swap` flag. The new default binding will be:
 
@@ -14,30 +14,27 @@ Existing user configuration files are not rewritten automatically.
 
 ## Behavior
 
-Given three monitors with active workspaces:
+Given two monitors with active workspaces:
 
 ```text
-1[A] 2[B] 3[C]
+1[A] 2[B]
 ```
 
-With workspace `A` focused, the first invocation produces:
+With workspace `A` focused, the invocation produces:
 
 ```text
-1[B] 2[A] 3[C]
+1[B] 2[A]
 ```
 
-Workspace `A` remains focused. Invoking the command again resolves `next` relative to `A`'s new monitor and produces:
-
-```text
-1[B] 2[C] 3[A]
-```
+Workspace `A` remains focused.
 
 Additional behavior:
 
 - With one monitor, `--wrap-around next` resolves to the same monitor and succeeds without changing state.
 - With two monitors, the active workspaces exchange monitors.
+- With more than two monitors, `--swap` uses the existing move-and-replace-with-stub behavior to avoid relying on monitor order for a series of swaps.
 - `left`, `down`, `up`, `right`, `next`, `prev`, and monitor-pattern targets all support `--swap`.
-- `--workspace <workspace>` swaps the selected workspace rather than necessarily the focused workspace; in swap mode, the selected workspace must currently be visible.
+- With exactly two monitors, `--workspace <workspace>` swaps the selected workspace rather than necessarily the focused workspace; the selected workspace must currently be visible.
 - Focus behavior remains unchanged: if the moved workspace was focused, focus follows it to the target monitor.
 - Without `--swap`, `move-workspace-to-monitor` retains its current move-and-replace-with-stub behavior.
 
@@ -84,10 +81,10 @@ Update `Sources/AppBundle/command/impl/MoveWorkspaceToMonitorCommand.swift`:
 
 - Resolve the source workspace and target monitor exactly as today.
 - Preserve the existing same-monitor success path.
-- Require a selected `--workspace` source to be visible in swap mode, because an invisible workspace is not the active workspace that can be exchanged with another monitor.
-- When `--swap` is present, call the atomic monitor helper.
+- Require a selected `--workspace` source to be visible when swapping on a two-monitor setup, because an invisible workspace is not the active workspace that can be exchanged with another monitor.
+- When `--swap` is present and exactly two monitors are connected, call the atomic monitor helper.
 - On invalid force assignment, return a clear error naming both workspaces.
-- When `--swap` is absent, retain the existing target activation and source stub selection logic.
+- When `--swap` is absent or the monitor count is not two, retain the existing target activation and source stub selection logic.
 
 ### 4. Add multi-monitor test support
 
@@ -107,7 +104,7 @@ Expand `Sources/AppBundleTests/command/MoveWorkspaceToMonitorCommandTest.swift` 
 2. Existing parsing and non-swap behavior remain intact.
 3. One monitor plus `--wrap-around next` is a successful no-op.
 4. Two monitors exchange active workspaces and preserve focus on the selected workspace.
-5. Three monitors follow the required sequence across repeated invocations.
+5. Three monitors retain the existing move-and-replace-with-stub behavior.
 6. A force-assigned source workspace rejects the swap without mutation.
 7. A force-assigned target workspace rejects the swap without mutation.
 8. Plain `move-workspace-to-monitor` still leaves the displaced target workspace assigned to its original monitor and installs a stub on the source monitor.
@@ -150,8 +147,8 @@ Run:
 
 Manual QA with two and three monitors:
 
-1. Verify `alt-shift-tab` exchanges the focused and next-monitor workspaces.
-2. Invoke repeatedly and verify the focused workspace rotates through monitors while each displaced workspace moves into the vacated monitor.
+1. With two monitors, verify `alt-shift-tab` exchanges the focused workspace with the other monitor's workspace.
+2. With more than two monitors, verify `alt-shift-tab` retains the existing move-and-replace-with-stub behavior.
 3. Verify focus and focused window are preserved.
 4. Verify a single-monitor setup does nothing and reports no error.
 5. Verify workspaces constrained by `workspace-to-monitor-force-assignment` cannot produce a partial swap.
