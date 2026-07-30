@@ -17,14 +17,18 @@ fi
 PATH="$PATH:$(brew --prefix)/bin"
 export PATH
 
-brew list aerospace-dev-user/aerospace-dev-tap/aerospace-dev > /dev/null 2>&1 && brew uninstall aerospace-dev-user/aerospace-dev-tap/aerospace-dev # Compatibility. Drop after a while
-brew list nikitabobko/local-tap/aerospace-dev > /dev/null 2>&1 && brew uninstall nikitabobko/local-tap/aerospace-dev
-brew list aerospace > /dev/null 2>&1 && brew uninstall aerospace
-which brew-install-path > /dev/null 2>&1 || brew install nikitabobko/tap/brew-install-path
+while IFS= read -r installed_cask; do
+    brew uninstall --cask "$installed_cask"
+done < <(brew list --cask --full-name | grep -E '(^|/)aerospace(-dev)?$' || true)
+brew_install_path="$(brew --prefix brew-install-path 2>/dev/null || true)/bin/brew-install-path"
+if ! test -x "$brew_install_path"; then
+    brew install nikitabobko/tap/brew-install-path
+    brew_install_path="$(brew --prefix brew-install-path)/bin/brew-install-path"
+fi
 
 # Override HOMEBREW_CACHE. Otherwise, homebrew refuses to "redownload" the snapshot file
 # Maybe there is a better way, I don't know
 rm -rf /tmp/aerospace-from-sources-brew-cache
-HOMEBREW_CACHE=/tmp/aerospace-from-sources-brew-cache brew install-path ./.release/aerospace-dev.rb
+HOMEBREW_CACHE=/tmp/aerospace-from-sources-brew-cache "$brew_install_path" ./.release/aerospace-dev.rb
 
 rm -rf "$(brew --prefix)/Library/Taps/aerospace-dev-user" # Compatibility. Drop after a while

@@ -10,8 +10,19 @@ if ! grep -q '^5\.' <<< "$BASH_VERSION"; then
 fi
 
 add-optional-dep-to-bin() {
+    local name target
     if /usr/bin/which "$1" &> /dev/null; then
-        /bin/ln -s "$(/usr/bin/which "$1")" ".deps/bin/${2:-$1}"
+        name="${2:-$1}"
+        target="$(/usr/bin/which "$1")"
+        if test "$1" = bash || test "$1" = fish; then
+            /bin/ln -s "$target" ".deps/bin/$name"
+        else
+            /bin/cat > ".deps/bin/$name" <<EOF
+#!/bin/bash
+exec '$target' "\$@"
+EOF
+            chmod +x ".deps/bin/$name"
+        fi
     fi
 }
 
