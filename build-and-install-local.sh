@@ -8,7 +8,20 @@ if ((BASH_VERSINFO[0] < 5)); then
             exec "$candidate" "$0" "$@"
         fi
     done
-    echo "error: Bash 5 or newer is required. Install it with: brew install bash" >&2
+
+    brew_bin="$(command -v brew 2>/dev/null || true)"
+    for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+        if [[ -z "$brew_bin" && -x "$candidate" ]]; then
+            brew_bin="$candidate"
+        fi
+    done
+    if [[ -n "$brew_bin" ]]; then
+        echo "Bash 5 or newer is missing; installing it with Homebrew..."
+        "$brew_bin" install bash
+        exec "$("$brew_bin" --prefix)/bin/bash" "$0" "$@"
+    fi
+
+    echo "error: Bash 5 or newer is required, and Homebrew was not found. Install Homebrew from https://brew.sh" >&2
     exit 1
 fi
 
@@ -19,6 +32,7 @@ usage() {
 Usage: ./build-and-install-local.sh [--dont-rebuild]
 
 Build and install the committed checkout as the Homebrew cask aerospace-dev.
+Missing Homebrew build dependencies are installed automatically.
 
 Options:
   --dont-rebuild  Reinstall the existing .release build without rebuilding it
@@ -75,17 +89,37 @@ if [[ -x "$ruby34_bin/ruby" ]]; then
     export PATH="$ruby34_bin:$PATH"
 fi
 
+install_missing_build_dependencies() {
+    local formulas=()
+    command -v swiftly >/dev/null 2>&1 || formulas+=(swiftly)
+    command -v cargo >/dev/null 2>&1 || formulas+=(rust)
+    command -v fish >/dev/null 2>&1 || formulas+=(fish)
+    [[ -x "$ruby34_bin/ruby" ]] || formulas+=(ruby@3.4)
+
+    if ((${#formulas[@]} > 0)); then
+        echo "Installing missing build dependencies with Homebrew: ${formulas[*]}"
+        brew install "${formulas[@]}"
+        hash -r
+    fi
+
+    if [[ -x "$ruby34_bin/ruby" ]]; then
+        export PATH="$ruby34_bin:$PATH"
+    fi
+}
+
 if ((rebuild)); then
     if [[ -n "$(git status --porcelain)" ]]; then
         git status --short >&2
         fail "the release build requires a clean worktree. Commit or stash the changes above, then rerun this script."
     fi
 
-    require_command swiftly "Install it with: brew install swiftly"
-    require_command cargo "Install Rust from https://rustup.rs"
-    require_command fish "Install it with: brew install fish"
-    require_command ruby "Install Ruby 3 with: brew install ruby@3.4"
-    require_command bundler "Install Bundler with: gem install bundler"
+    install_missing_build_dependencies
+
+    require_command swiftly "Automatic Homebrew installation failed; try: brew install swiftly"
+    require_command cargo "Automatic Homebrew installation failed; try: brew install rust"
+    require_command fish "Automatic Homebrew installation failed; try: brew install fish"
+    require_command ruby "Automatic Homebrew installation failed; try: brew install ruby@3.4"
+    require_command bundler "Ruby was installed, but Bundler is unavailable; try: $(brew --prefix ruby@3.4)/bin/gem install bundler"
     require_command xcodebuild "Install Xcode from the App Store."
 
     ruby_major="$(ruby -e 'print RUBY_VERSION.split(".").first')"

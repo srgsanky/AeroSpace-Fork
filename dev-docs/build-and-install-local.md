@@ -20,13 +20,31 @@ Selecting only the Command Line Tools is insufficient for the signed release bui
 
 ### 2. Install build dependencies
 
-Install the Homebrew dependencies:
+`build-and-install-local.sh` automatically installs missing build dependencies with Homebrew. Depending on what is already available, it installs:
+
+- `bash`
+- `swiftly`
+- `rust` (which provides Cargo)
+- `fish`
+- `ruby@3.4`
+
+It does not automatically install Xcode, Homebrew, or the code-signing certificate.
+
+To install the dependencies ahead of time, run:
 
 ```bash
-brew install swiftly bash fish ruby@3.4 xcbeautify
+brew install swiftly bash fish ruby@3.4 rust
 ```
 
-Install Rust and Cargo using [rustup](https://rustup.rs), then make sure the expected tools are available:
+`xcbeautify` is optional and makes Xcode output easier to read:
+
+```bash
+brew install xcbeautify
+```
+
+You may use a Rust toolchain installed by [rustup](https://rustup.rs) instead of Homebrew. If `cargo` is already available, the helper does not install Homebrew's `rust` formula.
+
+To verify the tools manually:
 
 ```bash
 export PATH="/opt/homebrew/opt/ruby@3.4/bin:/opt/homebrew/bin:$PATH"
@@ -71,7 +89,7 @@ When that command prints nothing, build and install:
 ./build-and-install-local.sh
 ```
 
-The script validates the common prerequisites and delegates to the repository's release and local Homebrew installation scripts. The build artifacts are written to `.release/`, including:
+The script installs any missing Homebrew build dependencies, validates the remaining prerequisites, and delegates to the repository's release and local Homebrew installation scripts. The build artifacts are written to `.release/`, including:
 
 - `.release/AeroSpace.app`
 - `.release/aerospace`
@@ -131,7 +149,7 @@ The debug build does not require the self-signed certificate, but Terminal must 
 
 ### Bash is too old
 
-If a script reports that Bash is too old:
+The helper attempts to install Homebrew's Bash and restart itself automatically. If that bootstrap fails, run:
 
 ```bash
 brew install bash
@@ -140,9 +158,13 @@ export PATH="$(brew --prefix)/bin:$PATH"
 
 Then confirm `bash --version` reports version 5 or newer.
 
+### A Homebrew dependency fails to install
+
+The helper prints the exact `brew install` command it is running. Resolve the reported Homebrew error and rerun the helper; already installed formulas will not be reinstalled.
+
 ### Ruby does not satisfy the Gemfile
 
-The documentation build requires Ruby 3, not the macOS system Ruby or Ruby 4:
+The documentation build requires Ruby 3, not the macOS system Ruby or Ruby 4. The helper installs and selects `ruby@3.4` automatically. To repair it manually:
 
 ```bash
 brew install ruby@3.4
