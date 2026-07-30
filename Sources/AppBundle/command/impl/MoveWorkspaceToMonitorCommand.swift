@@ -15,7 +15,7 @@ struct MoveWorkspaceToMonitorCommand: Command {
                 if targetMonitor.monitorId_oneBased == prevMonitor.monitorId_oneBased {
                     return .succ
                 }
-                if args.swap && monitors.count == 2 {
+                if args.swap && (monitors.count == 2 || args.target.val.directionOrNil != nil) {
                     guard focusedWorkspace.isVisible else {
                         return .fail(io.err("Can't swap invisible workspace '\(focusedWorkspace.name)'"))
                     }

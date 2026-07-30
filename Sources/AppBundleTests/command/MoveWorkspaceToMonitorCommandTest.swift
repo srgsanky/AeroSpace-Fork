@@ -38,7 +38,7 @@ final class MoveWorkspaceToMonitorCommandTest: XCTestCase {
         assertEquals(workspaces[0].workspaceMonitor.monitorId_oneBased, 2)
     }
 
-    func testSwapUsesMoveBehaviorWithThreeMonitors() async {
+    func testSwapUsesMoveBehaviorForRelativeTargetWithThreeMonitors() async {
         let workspaces = setUpVisibleWorkspaces(["A", "B", "C"])
 
         let result = await parseCommand("move-workspace-to-monitor --swap --wrap-around next").cmdOrDie.run(.defaultEnv, .emptyStdin)
@@ -48,6 +48,17 @@ final class MoveWorkspaceToMonitorCommandTest: XCTestCase {
         XCTAssertFalse(workspaces[1].isVisible)
         XCTAssertTrue(sortedMonitors[2].activeWorkspace === workspaces[2])
         XCTAssertTrue(focus.workspace === workspaces[0])
+    }
+
+    func testDirectionalSwapExchangesWorkspacesWithThreeMonitors() async {
+        let workspaces = setUpVisibleWorkspaces(["A", "B", "C"])
+
+        let result = await parseCommand("move-workspace-to-monitor --swap right").cmdOrDie.run(.defaultEnv, .emptyStdin)
+
+        assertEquals(result.exitCode.rawValue, 0)
+        assertEquals(activeWorkspaceNames, ["B", "A", "C"])
+        XCTAssertTrue(focus.workspace === workspaces[0])
+        assertEquals(workspaces[0].workspaceMonitor.monitorId_oneBased, 2)
     }
 
     func testSwapRejectsForceAssignedSourceWithoutMutation() async {
