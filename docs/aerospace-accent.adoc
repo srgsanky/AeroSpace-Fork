@@ -36,12 +36,12 @@ Running `accent` again on an accented window clears accent mode and returns the 
 
 Accent state is per-window. Multiple windows can be accented simultaneously and may overlap.
 
-The following example binds accent mode to alt-shift-space:
+The following example binds accent mode to ctrl-alt-c:
 
 [source,toml]
 ----
 [mode.main.binding]
-alt-shift-space = 'accent'
+ctrl-alt-c = 'accent'
 ----
 
 // =========================================================== Options

@@ -8,10 +8,10 @@ The default binding will be:
 
 ```toml
 [mode.main.binding]
-alt-shift-space = 'accent'
+ctrl-alt-c = 'accent'
 ```
 
-`alt-shift-space` is free in AeroSpace's default config and is conceptually related to the common floating-window shortcut. The i3-like example already uses this binding for its existing floating toggle and should remain unchanged.
+`ctrl-alt-c` is free in AeroSpace's default config and uses `c` as a mnemonic for the centered accent window. The i3-like example already uses `alt-shift-space` for its existing floating toggle and should remain unchanged.
 
 ## Behavior
 
@@ -160,7 +160,7 @@ Update `docs/config-examples/default-config.toml`:
 
 ```toml
 # See: https://nikitabobko.github.io/AeroSpace/commands#accent
-alt-shift-space = 'accent'
+ctrl-alt-c = 'accent'
 ```
 
 Place it near the existing layout bindings. Do not alter:
@@ -225,7 +225,7 @@ Create `docs/aerospace-accent.adoc` containing:
 - Ordinary floating windows return to tiling after the second toggle.
 - Multiple accented windows may overlap.
 - Exact prior tiling placement is not restored.
-- The `alt-shift-space` configuration example.
+- The `ctrl-alt-c` configuration example.
 
 Add the command to `docs/commands.adoc` in alphabetical order.
 
@@ -260,7 +260,7 @@ Run:
 Perform manual QA with the default binding:
 
 ```toml
-alt-shift-space = 'accent'
+ctrl-alt-c = 'accent'
 ```
 
 Manual scenarios:

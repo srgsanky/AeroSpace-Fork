@@ -114,7 +114,7 @@ gaps.outer.right =      0
     alt-comma = 'layout accordion horizontal vertical'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#accent
-    alt-shift-space = 'accent'
+    ctrl-alt-c = 'accent'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#focus
     alt-h = 'focus left'
