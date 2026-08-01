@@ -2,15 +2,16 @@
 
 ## Goal
 
-Change the default `alt-shift-tab` workflow to enter a one-shot `move-workspace` binding mode. Directional `h`, `j`, `k`, and `l` bindings swap the focused workspace with the active workspace on the monitor in that direction, regardless of the number of connected monitors.
+Preserve the default `alt-shift-tab` workflow for moving the focused workspace to the next monitor. Add `ctrl-shift-tab` to enter a one-shot `swap-workspace` binding mode. Directional `h`, `j`, `k`, and `l` bindings swap the focused workspace with the active workspace on the monitor in that direction, regardless of the number of connected monitors.
 
 Preserve the existing `move-workspace-to-monitor` behavior for scripts and existing configurations by keeping swap behavior opt-in with `--swap`. The new default bindings are:
 
 ```toml
 [mode.main.binding]
-    alt-shift-tab = 'mode move-workspace'
+    alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+    ctrl-shift-tab = 'mode swap-workspace'
 
-[mode.move-workspace.binding]
+[mode.swap-workspace.binding]
     h = ['move-workspace-to-monitor --swap left', 'mode main']
     j = ['move-workspace-to-monitor --swap down', 'mode main']
     k = ['move-workspace-to-monitor --swap up', 'mode main']
@@ -121,7 +122,7 @@ Expand `Sources/AppBundleTests/command/MoveWorkspaceToMonitorCommandTest.swift` 
 
 ### 6. Change the shipped default binding
 
-Update `docs/config-examples/default-config.toml` so `alt-shift-tab` enters the `move-workspace` mode and that mode maps `h`, `j`, `k`, and `l` to one-shot directional swaps. Include an `esc` binding that returns to `main` mode without moving.
+Update `docs/config-examples/default-config.toml` so `alt-shift-tab` retains its existing move-to-next-monitor behavior and `ctrl-shift-tab` enters the `swap-workspace` mode. Map `h`, `j`, `k`, and `l` in that mode to one-shot directional swaps. Include an `esc` binding that returns to `main` mode without swapping.
 
 This changes newly copied/default configurations only. Document that existing users must update their own bindings.
 
@@ -154,8 +155,8 @@ Run:
 
 Manual QA with two and three monitors:
 
-1. Verify `alt-shift-tab` enters `move-workspace` mode.
-2. With two monitors, verify `h`, `j`, `k`, and `l` exchange the focused workspace with the monitor in that direction when one exists.
+1. Verify `alt-shift-tab` moves the focused workspace to the next monitor.
+2. Verify `ctrl-shift-tab` enters `swap-workspace` mode, then with two monitors verify `h`, `j`, `k`, and `l` exchange the focused workspace with the monitor in that direction when one exists.
 3. With more than two monitors, verify directional bindings exchange only the source and resolved target workspaces.
 4. Verify each directional binding returns to `main` mode and `esc` cancels without moving.
 5. Verify focus and focused window are preserved.

@@ -58,9 +58,10 @@ The default configuration uses a binding mode for directional workspace swaps:
 [source,toml]
 ----
 [mode.main.binding]
-    alt-shift-tab = 'mode move-workspace'
+    alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+    ctrl-shift-tab = 'mode swap-workspace'
 
-[mode.move-workspace.binding]
+[mode.swap-workspace.binding]
     h = ['move-workspace-to-monitor --swap left',  'mode main']
     j = ['move-workspace-to-monitor --swap down',  'mode main']
     k = ['move-workspace-to-monitor --swap up',    'mode main']
@@ -68,8 +69,9 @@ The default configuration uses a binding mode for directional workspace swaps:
     esc = 'mode main'
 ----
 
-Press `alt-shift-tab`, release it, and then press `h`, `j`, `k`, or `l`.
-After a move, the binding returns to `main` mode; `esc` cancels without moving.
+Press `alt-shift-tab` to move the focused workspace to the next monitor.
+To swap workspaces, press `ctrl-shift-tab`, release it, and then press `h`, `j`, `k`, or `l`.
+After a swap, the binding returns to `main` mode; `esc` cancels without swapping.
 Existing configuration files must update these bindings manually.
 
 // end::body[]
