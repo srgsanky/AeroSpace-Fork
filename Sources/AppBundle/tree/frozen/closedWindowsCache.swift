@@ -24,6 +24,7 @@ struct FrozenWorkspace: Sendable {
     let monitor: FrozenMonitor // todo drop this property, once monitor to workspace assignment migrates to TreeNode
     let rootTilingNode: FrozenContainer
     let floatingWindows: [FrozenWindow]
+    let stashedWindows: [(window: FrozenWindow, order: UInt64)]
     let macosUnconventionalWindows: [FrozenWindow]
 
     @MainActor init(_ workspace: Workspace) {
@@ -31,6 +32,7 @@ struct FrozenWorkspace: Sendable {
         monitor = FrozenMonitor(workspace.workspaceMonitor)
         rootTilingNode = FrozenContainer(workspace.rootTilingContainer)
         floatingWindows = workspace.floatingWindows.map(FrozenWindow.init)
+        stashedWindows = workspace.stashedWindows.map { (FrozenWindow($0), $0.stashOrder ?? 0) }
         macosUnconventionalWindows =
             workspace.macOsNativeHiddenAppsWindowsContainer.children.map { FrozenWindow($0 as! Window) } +
             workspace.macOsNativeFullscreenWindowsContainer.children.map { FrozenWindow($0 as! Window) }
@@ -67,6 +69,12 @@ struct FrozenWorkspace: Sendable {
         }
         for frozenWindow in frozenWorkspace.macosUnconventionalWindows { // Will get fixed by normalizations
             MacWindow.get(byId: frozenWindow.id)?.bindAsFloatingWindow(to: workspace)
+        }
+        // Bind oldest first so the container's MRU stack preserves the frozen newest-first ordering.
+        for stashed in frozenWorkspace.stashedWindows.reversed() {
+            if let window = MacWindow.get(byId: stashed.window.id) {
+                StashedWindows.restoreFrozenMembership(window, workspace: workspace, order: stashed.order)
+            }
         }
         let prevRoot = workspace.rootTilingContainer // Save prevRoot into a variable to avoid it being garbage collected earlier than needed
         let potentialOrphans = prevRoot.allLeafWindowsRecursive

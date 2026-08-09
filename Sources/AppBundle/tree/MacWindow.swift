@@ -81,7 +81,14 @@ final class MacWindow: Window {
             return
         }
         if !skipClosedWindowsCache { cacheClosedWindowIfNeeded() }
+        let wasStashed = isStashed
         let parent = unbindFromParent().parent
+        stashOrder = nil
+        if wasStashed {
+            Task.startUnstructured { @MainActor in
+                await StashPickerController.shared.refreshAfterWindowClosed()
+            }
+        }
         let deadWindowWorkspace = parent.nodeWorkspace
         let focus = focus
         if let deadWindowWorkspace, deadWindowWorkspace == focus.workspace ||
@@ -99,7 +106,8 @@ final class MacWindow: Window {
                     }
                 case .macosPopupWindowsContainer, // Don't switch back on popup destruction
                      .workspace, // Workspace is invalid parent for windows
-                     .macosMinimizedWindowsContainer: // Don't switch back on minimized windows destruction
+                     .macosMinimizedWindowsContainer, // Don't switch back on minimized windows destruction
+                     .stashedWindowsContainer: // Stashed windows don't participate in visible focus or layout
                     break
             }
         }
@@ -108,6 +116,18 @@ final class MacWindow: Window {
     override func getTitle(_ cm: CancellationMode) async throws -> String { try await macApp.getAxTitle(windowId, cm) ?? "" }
     override func isMacosFullscreen(_ cm: CancellationMode) async throws -> Bool { try await macApp.isMacosNativeFullscreen(windowId, cm) == true }
     override func isMacosMinimized(_ cm: CancellationMode) async throws -> Bool { try await macApp.isMacosNativeMinimized(windowId, cm) == true }
+    @MainActor override func isWindowOfMacosHiddenApp() -> Bool { macApp.nsApp.isHidden }
+
+    @MainActor override func parkForStash(in corner: OptimalHideCorner) async throws {
+        guard try await getAxRect(.nonCancellable) != nil else {
+            throw StashOperationError.cannotPark(windowId)
+        }
+        try await hideInCorner(corner, .nonCancellable)
+    }
+
+    @MainActor override func clearCornerParkingForRestore() {
+        unhideFromCorner()
+    }
 
     @MainActor override func nativeFocus() {
         macApp.nativeFocus(windowId)
@@ -120,11 +140,11 @@ final class MacWindow: Window {
 
     // todo it's part of the window layout and should be moved to layoutRecursive.swift
     @MainActor
-    func hideInCorner(_ corner: OptimalHideCorner) async throws {
+    func hideInCorner(_ corner: OptimalHideCorner, _ cm: CancellationMode = .cancellable) async throws {
         guard let nodeMonitor else { return }
         // Don't accidentally override prevUnhiddenEmulationPosition in case of subsequent `hideInCorner` calls
         if !isHiddenInCorner {
-            guard let windowRect = try await getAxRect(.cancellable) else { return }
+            guard let windowRect = try await getAxRect(cm) else { return }
             // Check for isHiddenInCorner for the second time because of the suspension point above
             if !isHiddenInCorner {
                 let topLeftCorner = windowRect.topLeftCorner
@@ -140,7 +160,7 @@ final class MacWindow: Window {
         let p: CGPoint
         switch corner {
             case .bottomLeftCorner:
-                guard let s = try await getAxSize(.cancellable) else { fallthrough }
+                guard let s = try await getAxSize(cm) else { fallthrough }
                 // Zoom will jump off if you do one pixel offset https://github.com/nikitabobko/AeroSpace/issues/527
                 // todo this ad hoc won't be necessary once I implement optimization suggested by Zalim
                 let onePixelOffset = macApp.appId == .zoom ? .zero : CGPoint(x: 1, y: -1)
@@ -176,7 +196,7 @@ final class MacWindow: Window {
 
                 setAxFrame(CGPoint(x: newX, y: newY), nil)
             case .macosNativeFullscreenWindow, .macosNativeHiddenAppWindow, .macosNativeMinimizedWindow,
-                 .macosPopupWindow, .tiling, .rootTilingContainer, .shimContainerRelation: break
+                 .macosPopupWindow, .stashedWindow, .tiling, .rootTilingContainer, .shimContainerRelation: break
         }
 
         self.prevUnhiddenProportionalPositionInsideWorkspaceRect = nil
@@ -224,7 +244,7 @@ private func unbindAndGetBindingDataForNewWindow(_ windowId: UInt32, _ macApp: M
 @MainActor
 private func unbindAndGetBindingDataForNewTilingWindow(_ workspace: Workspace, window: Window?) -> BindingData {
     window?.unbindFromParent() // It's important to unbind to get correct data from below
-    let mruWindow = workspace.mostRecentWindowRecursive
+    let mruWindow = workspace.mostRecentVisibleWindowRecursive
     if let mruWindow, let tilingParent = mruWindow.parent as? TilingContainer {
         return BindingData(
             parent: tilingParent,
@@ -246,7 +266,7 @@ func tryOnWindowDetected(_ window: Window) async {
         case .tilingContainer, .floatingWindowsContainer, .macosMinimizedWindowsContainer,
              .macosFullscreenWindowsContainer, .macosHiddenAppsWindowsContainer:
             _ = await onWindowDetected(.defaultEnv, CmdIoImpl.emptyStdinIgnoringOut, window)
-        case .macosPopupWindowsContainer, .unbound:
+        case .macosPopupWindowsContainer, .stashedWindowsContainer, .unbound:
             break
     }
 }

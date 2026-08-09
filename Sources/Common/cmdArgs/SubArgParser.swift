@@ -16,7 +16,13 @@ func falseBoolFlag<T>(_ keyPath: SendableWritableKeyPath<T, Bool>) -> SubArgPars
 }
 
 func boolFlag<T>(_ keyPath: SendableWritableKeyPath<T, Bool?>) -> SubArgParser<T, Bool?> {
-    ArgParser(keyPath) { input in input.argOrNil == "no" ? .succ(false, advanceBy: 1) : .succ(true, advanceBy: 0) }
+    ArgParser(keyPath) { input in
+        switch input.argOrNil {
+            case "no": .succ(false, advanceBy: 1)
+            case "yes": .succ(true, advanceBy: 1)
+            default: .succ(true, advanceBy: 0)
+        }
+    }
 }
 
 func singleValueSubArgParser<Root, Value>(

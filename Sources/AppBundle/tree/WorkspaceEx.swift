@@ -33,6 +33,21 @@ extension Workspace {
         }
     }
 
+    @MainActor
+    var stashedWindows: [Window] {
+        Array(stashedWindowsContainer.mruChildren).compactMap { $0 as? Window }
+    }
+
+    @MainActor
+    var stashedWindowsContainer: StashedWindowsContainer {
+        let containers = children.filterIsInstance(of: StashedWindowsContainer.self)
+        return switch containers.count {
+            case 0: StashedWindowsContainer(parent: self)
+            case 1: containers.singleOrNil().orDie()
+            default: dieT("Workspace must contain zero or one StashedWindowsContainer")
+        }
+    }
+
     @MainActor var macOsNativeFullscreenWindowsContainer: MacosFullscreenWindowsContainer {
         let containers = children.filterIsInstance(of: MacosFullscreenWindowsContainer.self)
         return switch containers.count {

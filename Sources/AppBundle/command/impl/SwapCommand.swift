@@ -13,6 +13,7 @@ struct SwapCommand: Command {
         guard let currentWindow = target.windowOrNil else {
             return .fail(io.err(noWindowIsFocused))
         }
+        if currentWindow.isStashed { return .fail(io.err(stashedWindowCommandError(currentWindow))) }
 
         let targetWindow: Window?
         switch args.target.val {

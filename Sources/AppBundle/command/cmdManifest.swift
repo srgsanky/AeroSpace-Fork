@@ -78,6 +78,10 @@ extension CmdArgs {
                 command = RunCallbackCommand(args: self as! RunCallbackCmdArgs)
             case .split:
                 command = SplitCommand(args: self as! SplitCmdArgs)
+            case .stash:
+                command = StashCommand(args: self as! StashCmdArgs)
+            case .stashPicker:
+                command = StashPickerCommand(args: self as! StashPickerCmdArgs)
             case .subscribe:
                 return .failure("subscribe is not supported in the eval", EXIT_CODE_TWO)
             case .summonWorkspace:
@@ -90,6 +94,8 @@ extension CmdArgs {
                 command = TestNotCommand(args: self as! TestNotCmdArgs)
             case .triggerBinding:
                 command = TriggerBindingCommand(args: self as! TriggerBindingCmdArgs)
+            case .unstash:
+                command = UnstashCommand(args: self as! UnstashCmdArgs)
             case .volume:
                 command = VolumeCommand(args: self as! VolumeCmdArgs)
             case .workspace:

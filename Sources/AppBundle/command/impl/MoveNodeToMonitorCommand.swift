@@ -10,6 +10,7 @@ struct MoveNodeToMonitorCommand: Command {
         guard let window = target.windowOrNil else {
             return .fail(io.err(noWindowIsFocused))
         }
+        if window.isStashed { return .fail(io.err(stashedWindowCommandError(window))) }
         guard let currentMonitor = window.nodeMonitor else {
             return .fail(io.err(windowIsntPartOfTree(window)))
         }

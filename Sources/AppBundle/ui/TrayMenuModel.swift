@@ -47,7 +47,7 @@ enum AxPermissionStatus: Equatable {
             name: $0.name,
             suffix: suffix,
             isFocused: focus.workspace == $0,
-            isEffectivelyEmpty: $0.isEffectivelyEmpty,
+            isOccupied: $0.isOccupied,
             isVisible: $0.isVisible,
             hasFullscreenWindows: hasFullscreenWindows,
         )
@@ -74,7 +74,7 @@ struct WorkspaceViewModel: Hashable {
     let name: String
     let suffix: String
     let isFocused: Bool
-    let isEffectivelyEmpty: Bool
+    let isOccupied: Bool
     let isVisible: Bool
     let hasFullscreenWindows: Bool
 }

@@ -32,12 +32,19 @@ struct ListWindowsCommand: Command {
                 workspaces = workspaces.filter { monitors.contains($0.workspaceMonitor.rect.topLeftCorner) }
             }
             windows = workspaces.flatMap(\.allLeafWindowsRecursive)
+            if args.filteringOptions.workspaces.isEmpty, args.filteringOptions.monitors.contains(.all) {
+                windows += macosMinimizedWindowsContainer.children.filterIsInstance(of: Window.self)
+                windows += macosPopupWindowsContainer.children.filterIsInstance(of: Window.self)
+            }
             if let pid = args.filteringOptions.pidFilter {
                 windows = windows.filter { $0.app.pid == pid }
             }
             if let appId = args.filteringOptions.appIdFilter {
                 windows = windows.filter { $0.app.rawAppBundleId == appId }
             }
+        }
+        if let stashed = args.stashedFilter {
+            windows = windows.filter { $0.isStashed == stashed }
         }
 
         if args.outputOnlyCount {

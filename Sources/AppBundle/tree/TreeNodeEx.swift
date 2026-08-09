@@ -16,6 +16,13 @@ extension TreeNode {
         return result
     }
 
+    /// Managed windows that participate in normal presentation. Stashed windows are intentionally omitted.
+    var visibleLeafWindowsRecursive: [Window] {
+        if self is StashedWindowsContainer { return [] }
+        if let window = self as? Window { return [window] }
+        return children.flatMap(\.visibleLeafWindowsRecursive)
+    }
+
     var ownIndex: Int? {
         guard let parent else { return nil }
         return parent.children.firstIndex(of: self).orDie()
@@ -41,13 +48,23 @@ extension TreeNode {
                  .tilingContainer,
                  .macosFullscreenWindowsContainer,
                  .macosHiddenAppsWindowsContainer,
-                 .floatingWindowsContainer: parent?.nodeMonitor
+                 .floatingWindowsContainer,
+                 .stashedWindowsContainer: parent?.nodeMonitor
             case .macosMinimizedWindowsContainer, .macosPopupWindowsContainer: nil
         }
     }
 
     var mostRecentWindowRecursive: Window? {
         self as? Window ?? mostRecentChild?.mostRecentWindowRecursive
+    }
+
+    var mostRecentVisibleWindowRecursive: Window? {
+        if self is StashedWindowsContainer { return nil }
+        if let window = self as? Window { return window }
+        for child in mruChildren where child.parent === self {
+            if let window = child.mostRecentVisibleWindowRecursive { return window }
+        }
+        return children.reversed().lazy.compactMap(\.mostRecentVisibleWindowRecursive).first
     }
 
     var anyLeafWindowRecursive: Window? {
@@ -62,9 +79,15 @@ extension TreeNode {
         return nil
     }
 
-    // Doesn't contain at least one window
+    /// Doesn't contain a window that participates in normal presentation.
     var isEffectivelyEmpty: Bool {
-        anyLeafWindowRecursive == nil
+        visibleLeafWindowsRecursive.isEmpty
+    }
+
+    /// Unlike `isEffectivelyEmpty`, this query is suitable for workspace lifetime decisions.
+    /// A workspace containing only stashed windows is visually empty but remains occupied.
+    var isOccupied: Bool {
+        anyLeafWindowRecursive != nil
     }
 
     @MainActor
@@ -91,7 +114,8 @@ extension TreeNode {
                      .floatingWindowsContainer,
                      .macosFullscreenWindowsContainer,
                      .macosHiddenAppsWindowsContainer,
-                     .macosPopupWindowsContainer:
+                     .macosPopupWindowsContainer,
+                     .stashedWindowsContainer:
                     true
                 case .tilingContainer(let parent):
                     (layout == nil || parent.layout == layout) &&
@@ -105,7 +129,8 @@ extension TreeNode {
                 check(parent.orientation == direction.orientation)
                 return innermostChild.ownIndex.map { (parent, $0) }
             case .workspace, .floatingWindowsContainer, nil, .macosMinimizedWindowsContainer,
-                 .macosFullscreenWindowsContainer, .macosHiddenAppsWindowsContainer, .macosPopupWindowsContainer:
+                 .macosFullscreenWindowsContainer, .macosHiddenAppsWindowsContainer, .macosPopupWindowsContainer,
+                 .stashedWindowsContainer:
                 return nil
         }
     }

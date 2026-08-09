@@ -259,6 +259,20 @@ include::aerospace-split.adoc[tags=synopsis]
 include::aerospace-split.adoc[tags=purpose]
 include::aerospace-split.adoc[tags=body]
 
+== stash
+----
+include::aerospace-stash.adoc[tags=synopsis]
+----
+include::aerospace-stash.adoc[tags=purpose]
+include::aerospace-stash.adoc[tags=body]
+
+== stash-picker
+----
+include::aerospace-stash-picker.adoc[tags=synopsis]
+----
+include::aerospace-stash-picker.adoc[tags=purpose]
+include::aerospace-stash-picker.adoc[tags=body]
+
 == subscribe
 ----
 include::aerospace-subscribe.adoc[tags=synopsis]
@@ -308,6 +322,13 @@ include::aerospace-true.adoc[tags=synopsis]
 ----
 include::aerospace-true.adoc[tags=purpose]
 include::aerospace-true.adoc[tags=body]
+
+== unstash
+----
+include::aerospace-unstash.adoc[tags=synopsis]
+----
+include::aerospace-unstash.adoc[tags=purpose]
+include::aerospace-unstash.adoc[tags=body]
 
 == volume
 ----

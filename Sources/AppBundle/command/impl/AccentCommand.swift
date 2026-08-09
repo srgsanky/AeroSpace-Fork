@@ -15,8 +15,9 @@ struct AccentCommand: Command {
                  .macosHiddenAppsWindowsContainer,
                  .macosMinimizedWindowsContainer,
                  .macosPopupWindowsContainer,
+                 .stashedWindowsContainer,
                  .unbound:
-                return .fail(io.err("Can't accent macOS minimized, fullscreen, hidden, popup, or unbound windows"))
+                return .fail(io.err(window.isStashed ? stashedWindowCommandError(window) : "Can't accent macOS minimized, fullscreen, hidden, popup, or unbound windows"))
         }
 
         if window.isAccent {

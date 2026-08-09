@@ -26,6 +26,16 @@ extension HotKey {
 }
 
 @MainActor var activeMode: String? = mainModeId
+@MainActor private var areModeHotkeysSuspended = false
+
+@MainActor func setActiveModeHotkeysEnabled(_ enabled: Bool) {
+    areModeHotkeysSuspended = !enabled
+    let bindings = activeMode.flatMap { config.modes[$0] }.map { Set($0.bindings.keys) } ?? []
+    for (binding, key) in hotkeys where bindings.contains(binding) {
+        key.isEnabled = enabled
+    }
+}
+
 @MainActor func activateMode_nonCancellable(_ targetMode: String?) async {
     let targetBindings = targetMode.flatMap { config.modes[$0] }?.bindings ?? [:]
     for binding in targetBindings.values where !hotkeys.keys.contains(binding.descriptionWithKeyCode) {
@@ -45,7 +55,7 @@ extension HotKey {
         })
     }
     for (binding, key) in hotkeys {
-        key.isEnabled = targetBindings.keys.contains(binding)
+        key.isEnabled = !areModeHotkeysSuspended && targetBindings.keys.contains(binding)
     }
     let oldMode = activeMode
     activeMode = targetMode

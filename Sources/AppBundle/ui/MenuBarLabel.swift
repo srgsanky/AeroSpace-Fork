@@ -47,7 +47,7 @@ struct MenuBarLabel: View {
                 case .squares: squares
                 case .i3:
                     squares
-                    let workspaces = viewModel.workspaces.filter { !$0.isEffectivelyEmpty && !$0.isVisible }
+                    let workspaces = viewModel.workspaces.filter { $0.isOccupied && !$0.isVisible }
                     if !workspaces.isEmpty {
                         otherWorkspaces(with: workspaces)
                     }
@@ -57,7 +57,7 @@ struct MenuBarLabel: View {
                         itemView(for: modeItem)
                         modeSeparator(with: .monospaced)
                     }
-                    let orderedWorkspaces = viewModel.workspaces.filter { !$0.isEffectivelyEmpty || $0.isVisible }
+                    let orderedWorkspaces = viewModel.workspaces.filter { $0.isOccupied || $0.isVisible }
                     ForEach(orderedWorkspaces, id: \.name) { item in
                         let trayItem = TrayItem(
                             type: .workspace,

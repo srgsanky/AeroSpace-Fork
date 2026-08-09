@@ -1,0 +1,34 @@
+= aerospace-stash-picker(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-stash-picker
+// tag::purpose[]
+:manpurpose: Pick and restore a stashed window
+// end::purpose[]
+
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace stash-picker [-h|--help] [--workspace <workspace>|--all]
+
+// end::synopsis[]
+
+== Description
+
+// tag::body[]
+{manpurpose}
+
+Opens a native AeroSpace HUD with stashed windows ordered from most recently stashed to least recently stashed. The focused workspace is used by default. Use `j` or Down Arrow and `k` or Up Arrow to change selection, Enter to restore, and Escape to cancel. Selection wraps at both ends.
+
+Restoration removes the selected window from the stash, inserts it into normal tiling on its owning workspace, and focuses it. `--all` does not move a restored window to the workspace where the picker was opened.
+
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--workspace <workspace>:: Show stashed windows belonging to the specified workspace.
+
+--all:: Show stashed windows from all workspaces.
+
+// end::body[]
+
+include::util/man-footer.adoc[]

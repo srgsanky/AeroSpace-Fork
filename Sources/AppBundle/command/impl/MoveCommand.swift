@@ -39,6 +39,8 @@ struct MoveCommand: Command {
                 return .fail(io.err("moving floating windows isn't yet supported")) // todo
             case .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer, .macosHiddenAppsWindowsContainer:
                 return .fail(io.err(moveOutMacosUnconventionalWindow))
+            case .stashedWindowsContainer:
+                return .fail(io.err(stashedWindowCommandError(currentWindow)))
             case .macosPopupWindowsContainer:
                 return .fail(io.err(bugPrompt())) // Impossible
         }
@@ -113,7 +115,8 @@ private let moveOutMacosUnconventionalWindow = "moving macOS fullscreen, minimiz
                  .macosMinimizedWindowsContainer,
                  .macosFullscreenWindowsContainer,
                  .macosHiddenAppsWindowsContainer,
-                 .macosPopupWindowsContainer: true
+                 .macosPopupWindowsContainer,
+                 .stashedWindowsContainer: true
         }
     }) as? TilingContainer
     guard let innerMostTilingContainer else { return .fail(io.err(bugPrompt())) } // Impossible

@@ -40,6 +40,8 @@ struct SplitCommand: Command {
                 return .succ
             case .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer, .macosHiddenAppsWindowsContainer:
                 return .fail(io.err("Can't split macos fullscreen, minimized windows and windows of hidden apps. This behavior may change in the future"))
+            case .stashedWindowsContainer:
+                return .fail(io.err(stashedWindowCommandError(window)))
             case .macosPopupWindowsContainer, .workspace:
                 return .fail(io.err(bugPrompt())) // Impossible
         }

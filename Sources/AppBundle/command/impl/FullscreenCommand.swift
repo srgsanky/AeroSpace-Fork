@@ -10,6 +10,7 @@ struct FullscreenCommand: Command {
         guard let window = target.windowOrNil else {
             return .fail(io.err(noWindowIsFocused))
         }
+        if window.isStashed { return .fail(io.err(stashedWindowCommandError(window))) }
         let newState: Bool = switch args.toggle {
             case .on: true
             case .off: false

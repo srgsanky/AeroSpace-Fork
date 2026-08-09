@@ -23,6 +23,10 @@ struct EnableCommand: Command {
             }
         }
 
+        if !newState {
+            await StashPickerController.shared.dismissIfOpen()
+            await StashedWindows.restoreAllForDisable()
+        }
         TrayMenuModel.shared.isEnabled = newState
         if newState {
             for workspace in Workspace.all {

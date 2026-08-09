@@ -1,0 +1,42 @@
+= aerospace-stash(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-stash
+// tag::purpose[]
+:manpurpose: Stash a window without using macOS minimize or application hide
+// end::purpose[]
+
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace stash [-h|--help] [--window-id <window-id>] [--fail-if-noop]
+
+// end::synopsis[]
+
+== Description
+
+// tag::body[]
+{manpurpose}
+
+The window remains open and owned by its workspace, but is removed from tiling and focus navigation and parked off-screen. Tiled, floating, and accented windows can be stashed. Restoring always returns the window to tiling; its former position, weight, floating frame, and accent state are not retained.
+
+macOS minimized windows, macOS native fullscreen windows, windows of hidden applications, popups, and unbound windows cannot be stashed.
+
+[source,toml]
+----
+[mode.main.binding]
+ctrl-alt-shift-h = 'stash'
+ctrl-alt-h = 'stash-picker'
+----
+
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--window-id <window-id>::
+include::./util/window-id-flag-desc.adoc[]
+
+--fail-if-noop:: Exit with a non-zero code when the target window is already stashed.
+
+// end::body[]
+
+include::util/man-footer.adoc[]

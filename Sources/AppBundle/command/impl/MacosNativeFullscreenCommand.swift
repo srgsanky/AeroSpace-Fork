@@ -15,6 +15,7 @@ struct MacosNativeFullscreenCommand: Command {
         guard let window = target.windowOrNil else {
             return .fail(io.err(noWindowIsFocused))
         }
+        if window.isStashed { return .fail(io.err(stashedWindowCommandError(window))) }
         guard let prevState = try? await window.isMacosFullscreen(.nonCancellable) else { return .fail(io.err(bugPrompt())) }
         let newState: Bool = switch args.toggle {
             case .on: true

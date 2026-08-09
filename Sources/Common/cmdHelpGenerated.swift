@@ -89,9 +89,9 @@ let list_monitors_help_generated = """
 let list_windows_help_generated = """
     USAGE: list-windows [-h|--help] (--workspace <workspace>...|--monitor <monitor>...)
                         [--monitor <monitor>...] [--workspace <workspace>...]
-                        [--pid <pid>] [--app-bundle-id <app-bundle-id>] [--format <output-format>]
-                        [--count] [--json]
-       OR: list-windows [-h|--help] --all [--format <output-format>] [--count] [--json]
+                        [--pid <pid>] [--app-bundle-id <app-bundle-id>] [--stashed (yes|no)]
+                        [--format <output-format>] [--count] [--json]
+       OR: list-windows [-h|--help] --all [--stashed (yes|no)] [--format <output-format>] [--count] [--json]
        OR: list-windows [-h|--help] --focused [--format <output-format>] [--count] [--json]
     """
 let list_workspaces_help_generated = """
@@ -149,6 +149,12 @@ let run_callback_help_generated = """
 let split_help_generated = """
     USAGE: split [-h|--help] [--window-id <window-id>] (horizontal|vertical|opposite)
     """
+let stash_picker_help_generated = """
+    USAGE: stash-picker [-h|--help] [--workspace <workspace>|--all]
+    """
+let stash_help_generated = """
+    USAGE: stash [-h|--help] [--window-id <window-id>] [--fail-if-noop]
+    """
 let subscribe_help_generated = """
     USAGE: subscribe [-h|--help] [--all] [--no-send-initial] [<event>...]
     """
@@ -172,6 +178,9 @@ let trigger_binding_help_generated = """
     """
 let true_help_generated = """
     USAGE: true [-h|--help]
+    """
+let unstash_help_generated = """
+    USAGE: unstash [-h|--help] --window-id <window-id>
     """
 let volume_help_generated = """
     USAGE: volume [-h|--help] (up|down) [--no-gui]

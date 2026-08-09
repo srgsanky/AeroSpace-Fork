@@ -121,6 +121,10 @@ gaps.outer.right =      0
     # See: https://nikitabobko.github.io/AeroSpace/commands#accent
     ctrl-alt-c = 'accent'
 
+    # See: https://nikitabobko.github.io/AeroSpace/commands#stash
+    ctrl-alt-shift-h = 'stash'
+    ctrl-alt-h = 'stash-picker'
+
     # See: https://nikitabobko.github.io/AeroSpace/commands#focus
     alt-h = 'focus left'
     alt-j = 'focus down'

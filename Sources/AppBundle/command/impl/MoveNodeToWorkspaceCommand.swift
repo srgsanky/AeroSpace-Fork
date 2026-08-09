@@ -7,6 +7,7 @@ struct MoveNodeToWorkspaceCommand: Command {
     func run(_ env: CmdEnv, _ io: CmdIo) -> BinaryExitCode {
         guard let target = args.resolveTargetOrReportError(env, io) else { return .fail }
         guard let window = target.windowOrNil else { return .fail(io.err(noWindowIsFocused)) }
+        if window.isStashed { return .fail(io.err(stashedWindowCommandError(window))) }
         let subjectWs = window.nodeWorkspace
         let targetWorkspace: Workspace
         switch args.target.val {
@@ -30,6 +31,7 @@ struct MoveNodeToWorkspaceCommand: Command {
 
 @MainActor
 func moveWindowToWorkspace(_ window: Window, _ targetWorkspace: Workspace, _ io: CmdIo, focusFollowsWindow: Bool, failIfNoop: Bool, index: Int = INDEX_BIND_LAST) -> BinaryExitCode {
+    if window.isStashed { return .fail(io.err(stashedWindowCommandError(window))) }
     if window.nodeWorkspace == targetWorkspace {
         return switch failIfNoop {
             case true: .fail

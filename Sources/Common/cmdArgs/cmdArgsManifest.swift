@@ -39,6 +39,8 @@ public enum CmdKind: String, CaseIterable, Equatable, Sendable {
     case resize
     case runCallback = "run-callback"
     case split
+    case stash
+    case stashPicker = "stash-picker"
     case subscribe
     case summonWorkspace = "summon-workspace"
     case swap
@@ -48,6 +50,7 @@ public enum CmdKind: String, CaseIterable, Equatable, Sendable {
 
     case _true = "true"
 
+    case unstash
     case volume
     case workspace
     case workspaceBackAndForth = "workspace-back-and-forth"
@@ -133,6 +136,10 @@ func initSubcommands() -> [String: any SubCommandParserProtocol] {
                 result[kind.rawValue] = SubCommandParser(parseRunCallbackCmdArgs)
             case .split:
                 result[kind.rawValue] = SubCommandParser(parseSplitCmdArgs)
+            case .stash:
+                result[kind.rawValue] = SubCommandParser(StashCmdArgs.init)
+            case .stashPicker:
+                result[kind.rawValue] = SubCommandParser(StashPickerCmdArgs.init)
             case .subscribe:
                 result[kind.rawValue] = SubCommandParser(parseSubscribeCmdArgs)
             case .summonWorkspace:
@@ -147,6 +154,8 @@ func initSubcommands() -> [String: any SubCommandParserProtocol] {
                 result[kind.rawValue] = SubCommandParser(parseTriggerBindingCmdArgs)
             case ._true:
                 result[kind.rawValue] = SubCommandParser(TrueCmdArgs.init)
+            case .unstash:
+                result[kind.rawValue] = SubCommandParser(parseUnstashCmdArgs)
             case .volume:
                 result[kind.rawValue] = SubCommandParser(VolumeCmdArgs.init)
             case .workspace:

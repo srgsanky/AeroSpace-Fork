@@ -11,9 +11,9 @@ include::util/man-attributes.adoc[]
 // tag::synopsis[]
 aerospace list-windows [-h|--help] (--workspace <workspace>...|--monitor <monitor>...)
                        [--monitor <monitor>...] [--workspace <workspace>...]
-                       [--pid <pid>] [--app-bundle-id <app-bundle-id>] [--format <output-format>]
-                       [--count] [--json]
-aerospace list-windows [-h|--help] --all [--format <output-format>] [--count] [--json]
+                       [--pid <pid>] [--app-bundle-id <app-bundle-id>] [--stashed (yes|no)]
+                       [--format <output-format>] [--count] [--json]
+aerospace list-windows [-h|--help] --all [--stashed (yes|no)] [--format <output-format>] [--count] [--json]
 aerospace list-windows [-h|--help] --focused [--format <output-format>] [--count] [--json]
 
 // end::synopsis[]
@@ -55,6 +55,8 @@ Filter results to only print windows that belong to the Application with specifi
 +
 Deprecated (but still supported) flag name: `--app-id`
 
+--stashed (yes|no):: Filter results by stash membership.
+
 --format <output-format>:: Specify output format. See "Output Format" section for more details.
 Incompatible with `--count`
 
@@ -80,7 +82,8 @@ The following variables can be used inside `<output-format>`:
 %{window-title}:: String. Window title
 %{window-is-fullscreen}:: Boolean. Is window in fullscreen by `aerospace fullscreen` command
 %{window-layout}:: String. An alias for `%{window-parent-container-layout}`
-%{window-parent-container-layout}:: String. The layout (`v_tiles`, `h_tiles`, `v_accordion`, `h_accordion`, `floating`) of the window's parent container.
+%{window-parent-container-layout}:: String. The layout (`v_tiles`, `h_tiles`, `v_accordion`, `h_accordion`, `floating`, `stashed`) of the window's parent container.
+%{window-state}:: String. One of `tiled`, `floating`, `accented`, `stashed`, `macos_native_minimized`, `macos_native_fullscreen`, `macos_native_window_of_hidden_app`, or `popup`.
 
 %{app-bundle-id}:: String. Application unique identifier. https://developer.apple.com/documentation/appstoreconnectapi/bundle_ids[Bundle ID]
 %{app-name}:: String. Application name

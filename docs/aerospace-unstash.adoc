@@ -1,0 +1,30 @@
+= aerospace-unstash(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-unstash
+// tag::purpose[]
+:manpurpose: Restore a stashed window to tiling
+// end::purpose[]
+
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace unstash [-h|--help] --window-id <window-id>
+
+// end::synopsis[]
+
+== Description
+
+// tag::body[]
+{manpurpose}
+
+Removes the specified window from its owning workspace's stash, inserts it using normal new-tiling-window insertion behavior, and focuses it. Restoration does not run `on-window-detected` and does not restore the former tree position, weight, floating frame, or accent state.
+
+include::./util/conditional-options-header.adoc[]
+
+-h, --help:: Print help
+
+--window-id <window-id>:: The ID of the stashed window to restore.
+
+// end::body[]
+
+include::util/man-footer.adoc[]

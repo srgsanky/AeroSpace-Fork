@@ -34,6 +34,7 @@ struct FocusCommand: Command {
                 }
             case .windowId(let windowId):
                 if let windowToFocus = Window.get(byId: windowId) {
+                    if windowToFocus.isStashed { return .fail(io.err(stashedWindowCommandError(windowToFocus))) }
                     return .from(bool: windowToFocus.focusWindow())
                 } else {
                     return .fail(io.err("Can't find window with ID \(windowId)"))
@@ -209,7 +210,7 @@ extension TreeNode {
                 }
             case .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer,
                  .macosPopupWindowsContainer, .macosHiddenAppsWindowsContainer,
-                 .floatingWindowsContainer:
+                 .floatingWindowsContainer, .stashedWindowsContainer:
                 die("Impossible")
         }
     }

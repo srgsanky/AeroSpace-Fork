@@ -9,6 +9,7 @@ enum TreeNodeCases {
     case macosFullscreenWindowsContainer(MacosFullscreenWindowsContainer)
     case macosPopupWindowsContainer(MacosPopupWindowsContainer)
     case floatingWindowsContainer(FloatingWindowsContainer)
+    case stashedWindowsContainer(StashedWindowsContainer)
 }
 
 enum NonLeafTreeNodeCases {
@@ -19,6 +20,7 @@ enum NonLeafTreeNodeCases {
     case macosFullscreenWindowsContainer(MacosFullscreenWindowsContainer)
     case macosPopupWindowsContainer(MacosPopupWindowsContainer)
     case floatingWindowsContainer(FloatingWindowsContainer)
+    case stashedWindowsContainer(StashedWindowsContainer)
 }
 
 enum TilingTreeNodeCases {
@@ -34,6 +36,7 @@ enum NonLeafTreeNodeKind: Equatable {
     case macosFullscreenWindowsContainer
     case macosPopupWindowsContainer
     case floatingWindowsContainer
+    case stashedWindowsContainer
 }
 
 enum WindowParentCases {
@@ -44,6 +47,7 @@ enum WindowParentCases {
     case macosFullscreenWindowsContainer(MacosFullscreenWindowsContainer)
     case macosPopupWindowsContainer(MacosPopupWindowsContainer)
     case floatingWindowsContainer(FloatingWindowsContainer)
+    case stashedWindowsContainer(StashedWindowsContainer)
 }
 
 enum TilingContainerParentCases {
@@ -82,6 +86,7 @@ extension Window {
             case .macosHiddenAppsWindowsContainer(let it): .macosHiddenAppsWindowsContainer(it)
             case .macosMinimizedWindowsContainer(let it): .macosMinimizedWindowsContainer(it)
             case .macosPopupWindowsContainer(let it): .macosPopupWindowsContainer(it)
+            case .stashedWindowsContainer(let it): .stashedWindowsContainer(it)
             case .tilingContainer(let it): .tilingContainer(it)
             case .workspace: dieT("Workspace can't have direct Window children")
         }
@@ -99,6 +104,7 @@ extension TilingContainer {
             case .macosHiddenAppsWindowsContainer: dieT("macosHiddenAppsWindowsContainer can't be TilingContainer's parent")
             case .macosMinimizedWindowsContainer: dieT("macosMinimizedWindowsContainer can't be TilingContainer's parent")
             case .macosPopupWindowsContainer: dieT("macosPopupWindowsContainer can't be TilingContainer's parent")
+            case .stashedWindowsContainer: dieT("stashedWindowsContainer can't be TilingContainer's parent")
         }
     }
 }
@@ -114,6 +120,7 @@ extension TreeNode {
             case let container as MacosFullscreenWindowsContainer: .macosFullscreenWindowsContainer(container)
             case let container as MacosPopupWindowsContainer: .macosPopupWindowsContainer(container)
             case let container as FloatingWindowsContainer: .floatingWindowsContainer(container)
+            case let container as StashedWindowsContainer: .stashedWindowsContainer(container)
             default: die("Unknown tree")
         }
     }
@@ -138,6 +145,7 @@ extension NonLeafTreeNodeObject {
             case let container as MacosFullscreenWindowsContainer: .macosFullscreenWindowsContainer(container)
             case let container as MacosPopupWindowsContainer: .macosPopupWindowsContainer(container)
             case let container as FloatingWindowsContainer: .floatingWindowsContainer(container)
+            case let container as StashedWindowsContainer: .stashedWindowsContainer(container)
             default: die("Unknown tree \(self)")
         }
     }
@@ -151,6 +159,7 @@ extension NonLeafTreeNodeObject {
             case .macosFullscreenWindowsContainer: .macosFullscreenWindowsContainer
             case .macosHiddenAppsWindowsContainer: .macosHiddenAppsWindowsContainer
             case .macosPopupWindowsContainer: .macosPopupWindowsContainer
+            case .stashedWindowsContainer: .stashedWindowsContainer
         }
     }
 }
@@ -161,6 +170,7 @@ enum ChildParentRelation: Equatable {
     case macosNativeHiddenAppWindow
     case macosNativeMinimizedWindow
     case macosPopupWindow
+    case stashedWindow
     case tiling(parent: TilingContainer) // todo consider splitting it on 'tiles' and 'accordion'
     case rootTilingContainer
 
@@ -198,6 +208,11 @@ func getChildParentRelationOrNil(child: TreeNode, parent: NonLeafTreeNodeObject)
         case (.window, .macosMinimizedWindowsContainer): .macosNativeMinimizedWindow
         case (_, .macosMinimizedWindowsContainer): nil
         case (.macosMinimizedWindowsContainer, _): nil
+
+        case (.stashedWindowsContainer, .workspace): .shimContainerRelation
+        case (.window, .stashedWindowsContainer): .stashedWindow
+        case (_, .stashedWindowsContainer): nil
+        case (.stashedWindowsContainer, _): nil
 
         case (.tilingContainer, .tilingContainer(let container)),
              (.window, .tilingContainer(let container)): .tiling(parent: container)

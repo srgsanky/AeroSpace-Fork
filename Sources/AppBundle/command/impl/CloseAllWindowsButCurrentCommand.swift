@@ -10,11 +10,12 @@ struct CloseAllWindowsButCurrentCommand: Command {
         guard let focused = target.windowOrNil else {
             return .fail(io.err("Empty workspace"))
         }
+        if focused.isStashed { return .fail(io.err(stashedWindowCommandError(focused))) }
         guard let workspace = focused.nodeWorkspace else {
             return .fail(io.err("Focused window '\(focused.windowId)' doesn't belong to workspace"))
         }
         var result = BinaryExitCode.succ
-        for window in workspace.allLeafWindowsRecursive where window != focused {
+        for window in workspace.visibleLeafWindowsRecursive where window != focused {
             result = await CloseCommand(args: args.closeArgs).run(env.withWindowId(window.windowId), io).and(result)
         }
         return result

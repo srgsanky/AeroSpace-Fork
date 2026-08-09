@@ -11,6 +11,7 @@ struct JoinWithCommand: Command {
         guard let currentWindow = target.windowOrNil else {
             return .fail(io.err(noWindowIsFocused))
         }
+        if currentWindow.isStashed { return .fail(io.err(stashedWindowCommandError(currentWindow))) }
         guard let (parent, ownIndex) = currentWindow.closestParent(hasChildrenInDirection: direction, withLayout: nil) else {
             return .fail(io.err("No windows in the specified direction"))
         }

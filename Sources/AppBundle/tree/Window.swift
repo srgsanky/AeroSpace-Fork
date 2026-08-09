@@ -6,6 +6,8 @@ open class Window: TreeNode, Hashable {
     let app: any AbstractApp
     var lastFloatingSize: CGSize?
     var isAccent: Bool = false
+    /// Monotonic session-local ordering assigned by `StashedWindows` while this window is stashed.
+    var stashOrder: UInt64? = nil
     var isFullscreen: Bool = false
     var noOuterGapsInFullscreen: Bool = false
     var layoutReason: LayoutReason = .standard
@@ -35,6 +37,9 @@ open class Window: TreeNode, Hashable {
     func getTitle(_ cm: CancellationMode) async throws -> String { die("Not implemented") }
     func isMacosFullscreen(_ cm: CancellationMode) async throws -> Bool { false }
     func isMacosMinimized(_ cm: CancellationMode) async throws -> Bool { false } // todo replace with enum MacOsWindowNativeState { normal, fullscreen, invisible }
+    @MainActor func isWindowOfMacosHiddenApp() -> Bool { false }
+    @MainActor func parkForStash(in corner: OptimalHideCorner) async throws {}
+    @MainActor func clearCornerParkingForRestore() {}
     var isHiddenInCorner: Bool { die("Not implemented") }
     @MainActor func nativeFocus() { die("Not implemented") }
     func getAxRect(_ cm: CancellationMode) async throws -> Rect? { die("Not implemented") }
@@ -57,6 +62,7 @@ extension Window {
             case .macosHiddenAppsWindowsContainer: false
             case .macosMinimizedWindowsContainer: false
             case .macosPopupWindowsContainer: false
+            case .stashedWindowsContainer: false
             case .tilingContainer: false
             case .unbound: false
         }
@@ -73,6 +79,10 @@ extension Window {
         lastFloatingSize = (try? await getAxSize(cm)) ?? lastFloatingSize
         isAccent = false
         try await relayoutWindow(on: workspace, cm, forceTile: true)
+    }
+
+    var isStashed: Bool {
+        if case .stashedWindowsContainer = windowParentCases { true } else { false }
     }
 
     func asMacWindow() -> MacWindow { self as! MacWindow }
