@@ -171,6 +171,8 @@ The exact former tree position and weight are intentionally not restored. This m
 
 Restoration must be atomic. The window remains stashed if it cannot be rebound and made visible.
 
+A native focus change to a stashed window is also a restoration request. This lets macOS context switchers such as Contexts discover a parked window and bring it back: AeroSpace activates the window's owning workspace, restores it to tiling, and focuses it. The stale native focus that macOS may continue to report immediately after `stash` is not a focus change and must not undo the stash.
+
 ## Window lifecycle behavior
 
 Normal window lifecycle events must not alter unrelated stashed windows.
@@ -232,7 +234,7 @@ When monitor topology changes:
 
 If the monitor hosting an all-workspaces picker disappears and there is no unambiguous owning workspace for the HUD, move the HUD to the newly focused monitor. If no monitor is available, dismiss the picker and keep all windows stashed.
 
-If an application tries to move or resize a stashed window onto a visible monitor, the next AeroSpace reconciliation reparks it. Application-driven focus requests do not implicitly restore a stashed window.
+If an application tries to move or resize a stashed window onto a visible monitor, the next AeroSpace reconciliation reparks it. If an application or external context switcher instead changes native focus to the stashed window, AeroSpace restores it on its owning workspace.
 
 ## State model
 
@@ -253,7 +255,7 @@ Core invariants:
 3. It is not a focus-navigation candidate.
 4. It does not participate in layout size calculations.
 5. A normal layout pass cannot accidentally restore it.
-6. Only explicit restoration or window closure removes it from the stash.
+6. Explicit restoration, an external native focus change to the window, or window closure removes it from the stash.
 7. Its physical parking location is derived from current monitor topology and is not its logical state.
 
 ## Command interface
@@ -418,6 +420,8 @@ Cover at least these scenarios:
 21. A later layout pass cannot unpark or tile a stashed window.
 22. Lock and unlock preserve stash state.
 23. Graceful disable restores stashed windows so none remain stranded off-screen.
+24. A context switcher changing native focus to a stashed window restores it on its owning workspace.
+25. Stale native focus reported immediately after `stash` does not restore the window.
 
 ## Manual QA
 
@@ -431,6 +435,7 @@ Cover at least these scenarios:
 8. Disable and restart AeroSpace and verify no window is stranded off-screen.
 9. Exercise apps with minimum-size or restricted-position windows and verify atomic failure.
 10. Verify VoiceOver announces picker rows and selection changes.
+11. Focus a stashed window with an external context switcher such as Contexts and verify AeroSpace restores it on its owning workspace.
 
 ## Non-goals
 

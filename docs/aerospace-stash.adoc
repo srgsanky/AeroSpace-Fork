@@ -19,6 +19,8 @@ aerospace stash [-h|--help] [--window-id <window-id>] [--fail-if-noop]
 
 The window remains open and owned by its workspace, but is removed from tiling and focus navigation and parked off-screen. Tiled, floating, and accented windows can be stashed. Restoring always returns the window to tiling; its former position, weight, floating frame, and accent state are not retained.
 
+If a macOS context switcher such as Contexts focuses a stashed window, AeroSpace automatically restores it to tiling on its owning workspace and brings that workspace to the foreground.
+
 macOS minimized windows, macOS native fullscreen windows, windows of hidden applications, popups, and unbound windows cannot be stashed.
 
 [source,toml]

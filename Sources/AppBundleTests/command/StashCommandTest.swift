@@ -151,6 +151,34 @@ final class StashCommandTest: XCTestCase {
         assertEquals(result.stdout, ["2 stashed"])
     }
 
+    func testNativeFocusChangeRestoresStashedWindowAcrossWorkspaces() async throws {
+        let currentWorkspace = focus.workspace
+        let current = TestWindow.new(id: 1, parent: currentWorkspace.rootTilingContainer)
+        await updateFocusCache(current)
+
+        let owningWorkspace = Workspace.get(byName: "other")
+        let stashed = TestWindow.new(id: 2, parent: owningWorkspace.rootTilingContainer)
+        try await StashedWindows.stash(stashed)
+
+        await updateFocusCache(stashed)
+
+        assertFalse(stashed.isStashed)
+        assertTrue(stashed.parent === owningWorkspace.rootTilingContainer)
+        assertTrue(focus.workspace === owningWorkspace)
+        assertTrue(focus.windowOrNil === stashed)
+    }
+
+    func testUnchangedNativeFocusDoesNotImmediatelyUndoStash() async throws {
+        let window = TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
+        await updateFocusCache(window)
+        try await StashedWindows.stash(window)
+
+        await updateFocusCache(window)
+
+        assertTrue(window.isStashed)
+        assertNil(focus.windowOrNil)
+    }
+
     func testNormalCommandsRejectExplicitStashedWindow() async {
         TestWindow.new(id: 1, parent: focus.workspace.rootTilingContainer)
         await parseCommand("stash --window-id 1").cmdOrDie.run(.defaultEnv, .emptyStdin)
