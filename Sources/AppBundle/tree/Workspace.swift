@@ -117,14 +117,24 @@ extension Workspace {
 extension Monitor {
     @MainActor
     var activeWorkspace: Workspace {
-        if let existing = screenPointToVisibleWorkspace[rect.topLeftCorner] {
+        let monitorPoint = rect.topLeftCorner
+        if let existing = screenPointToVisibleWorkspace[monitorPoint] {
             return existing
         }
         // What if monitor configuration changed? (frame.origin is changed)
         rearrangeWorkspacesOnMonitors()
-        // Normally, recursion should happen only once more because we must take the value from the cache
-        // (Unless, monitor configuration data race happens)
-        return self.activeWorkspace
+        if let existing = screenPointToVisibleWorkspace[monitorPoint] {
+            return existing
+        }
+        // AppKit can change the screen snapshot between constructing a Monitor and this lookup.
+        // Resolve a stale monitor to the nearest workspace instead of retrying recursively forever.
+        if let closest = screenPointToVisibleWorkspace.minBy({ ($0.key - monitorPoint).vectorLength }) {
+            return closest.value
+        }
+        // The cache can be empty during startup while AppKit temporarily reports no screens.
+        let stubWorkspace = getStubWorkspace(forPoint: monitorPoint)
+        check(monitorPoint.setActiveWorkspace(stubWorkspace))
+        return stubWorkspace
     }
 
     @MainActor
@@ -183,6 +193,9 @@ extension CGPoint {
 @MainActor
 private func rearrangeWorkspacesOnMonitors() {
     let newScreens = monitors.map(\.rect.topLeftCorner)
+    // NSScreen.screens can be transiently empty during display reconfiguration. Keep the last
+    // coherent workspace mapping until AppKit publishes a usable snapshot.
+    if newScreens.isEmpty { return }
     var newScreenToOldScreenMapping: [CGPoint: CGPoint] = [:]
     for (oldScreen, _) in screenPointToVisibleWorkspace {
         guard let newScreen = newScreens.minBy({ ($0 - oldScreen).vectorLength }) else { continue }
