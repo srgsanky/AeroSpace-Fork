@@ -41,6 +41,7 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                 }
                 Divider()
             }
+            builtInDisplayMenu(viewModel: viewModel)
             Button {
                 NSWorkspace.shared.open(URL(string: "https://github.com/sponsors/nikitabobko").orDie())
                 viewModel.sponsorshipMessage = sponsorshipPrompts.randomElement().orDie()
@@ -85,6 +86,62 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                     .aspectRatio(contentMode: .fit)
         }
     }
+}
+
+@MainActor @ViewBuilder
+private func builtInDisplayMenu(viewModel: TrayMenuModel) -> some View {
+    switch viewModel.builtInDisplayState {
+        case .noBuiltInDisplay:
+            EmptyView()
+        case .unsupported:
+            Button("Built-in Display Control — unsupported") {}
+                .disabled(true)
+            Divider()
+        case .disabledByConfig:
+            Button("Built-in Display Control — experimental option disabled") {}
+                .disabled(true)
+            Divider()
+        case .transitioning:
+            Button("Built-in Display — changing…") {}
+                .disabled(true)
+            Divider()
+        case .on(let canTurnOff, _):
+            Button(canTurnOff ? "Turn Off Built-in Display…" : "Built-in Display — only available display") {
+                runBuiltInDisplayMenuAction(.off)
+            }
+            .disabled(!canTurnOff)
+            Divider()
+        case .off:
+            Button("Turn On Built-in Display") {
+                runBuiltInDisplayMenuAction(.on)
+            }
+            Divider()
+    }
+}
+
+@MainActor
+private func runBuiltInDisplayMenuAction(_ request: BuiltInDisplayRequest) {
+    Task.startUnstructured { @MainActor in
+        do {
+            let result = try await runLightSession(.menuBarButton, .forceRun) {
+                BuiltInDisplayController.shared.apply(request)
+            }
+            if let message = result.errorMessage {
+                showBuiltInDisplayAlert(message)
+            }
+        } catch {
+            showBuiltInDisplayAlert(error.localizedDescription)
+        }
+    }
+}
+
+@MainActor
+private func showBuiltInDisplayAlert(_ message: String) {
+    let alert = NSAlert()
+    alert.alertStyle = .warning
+    alert.messageText = "Built-in Display"
+    alert.informativeText = message
+    alert.runModal()
 }
 
 @MainActor @ViewBuilder

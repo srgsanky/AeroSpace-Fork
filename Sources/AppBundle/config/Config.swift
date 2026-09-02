@@ -44,6 +44,7 @@ struct Config: ConvenienceMutable {
     var startAtLogin: Bool = false
     var autoReloadConfig: Bool = false
     var automaticallyUnhideMacosHiddenApps: Bool = false
+    var enableExperimentalBuiltInDisplayControl: Bool = false
     var accordionPadding: Int = 30
     var accentWidthRatio: Double = 2.0 / 3.0
     var accentHeightRatio: Double = 2.0 / 3.0

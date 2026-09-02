@@ -7,6 +7,11 @@ let accent_help_generated = """
 let balance_sizes_help_generated = """
     USAGE: balance-sizes [-h|--help] [--workspace <workspace>]
     """
+let built_in_display_help_generated = """
+    USAGE: built-in-display [-h|--help]
+       OR: built-in-display [-h|--help] on
+       OR: built-in-display [-h|--help] off
+    """
 let close_all_windows_but_current_help_generated = """
     USAGE: close-all-windows-but-current [-h|--help] [--quit-if-last-window]
     """

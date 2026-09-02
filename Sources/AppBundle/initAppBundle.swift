@@ -3,6 +3,9 @@ import Common
 import Foundation
 
 @MainActor public func initAppBundle() {
+    if runBuiltInDisplayRecoveryHelperIfRequested() {
+        exit(EXIT_CODE_ZERO)
+    }
     Task.startUnstructured {
         initTerminationHandler()
         unsafe _isCli = false
@@ -17,6 +20,7 @@ import Foundation
         await bootstrapConfig_nonCancellable()
         _ = await reloadConfig_nonCancellable()
 
+        BuiltInDisplayController.shared.start()
         startUnixSocketServer()
         GlobalObserver.initObserver()
         Workspace.garbageCollectUnusedWorkspaces() // init workspaces

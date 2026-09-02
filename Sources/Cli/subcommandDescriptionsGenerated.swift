@@ -4,6 +4,7 @@
 let subcommandDescriptions = [
     ["  accent", "Toggle accent mode for the focused window"],
     ["  balance-sizes", "Balance sizes of all windows in the current workspace"],
+    ["  built-in-display", "Turn the Mac's built-in display on or off"],
     ["  close-all-windows-but-current", "On the focused workspace, close all windows but current"],
     ["  close", "Close the focused window"],
     ["  config", "Query AeroSpace config options"],

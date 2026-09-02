@@ -58,6 +58,7 @@ struct ReloadConfigResult {
         syncStartAtLogin()
         syncFocusFollowsMouse(config)
         syncConfigFileWatcher()
+        BuiltInDisplayController.shared.configDidReload()
     }
 
     if warningsAsErrors {

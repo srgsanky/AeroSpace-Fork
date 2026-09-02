@@ -15,6 +15,12 @@ To swap the focused workspace with the active workspace on another monitor, pres
 
 This uses **Control**, not Command. Press <kbd>Esc</kbd> after the initial shortcut to cancel without swapping.
 
+## Built-in display
+
+With one or more active external displays attached, press and release <kbd>⌥ Option</kbd> + <kbd>⇧ Shift</kbd> + <kbd>;</kbd>, then press <kbd>D</kbd> to toggle the built-in display.
+
+The first use with a new external-display configuration asks for confirmation and restores the built-in display after 15 seconds if it is not confirmed. AeroSpace also restores it when the last external display disconnects or AeroSpace stops unexpectedly.
+
 ## Stashed windows
 
 AeroSpace calls per-window hiding **stashing**. This is distinct from macOS hiding an entire application.

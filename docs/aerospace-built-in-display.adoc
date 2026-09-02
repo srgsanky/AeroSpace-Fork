@@ -1,0 +1,51 @@
+= aerospace-built-in-display(1)
+include::util/man-attributes.adoc[]
+:manname: aerospace-built-in-display
+// tag::purpose[]
+:manpurpose: Turn the Mac's built-in display on or off
+// end::purpose[]
+
+// =========================================================== Synopsis
+== Synopsis
+[verse]
+// tag::synopsis[]
+aerospace built-in-display [-h|--help]
+aerospace built-in-display [-h|--help] on
+aerospace built-in-display [-h|--help] off
+
+// end::synopsis[]
+
+// =========================================================== Description
+== Description
+
+// tag::body[]
+{manpurpose}
+
+With no argument, the command toggles the built-in display.
+
+Turning the display off is experimental and uses an unsupported private CoreGraphics interface. It is allowed only when `enable-experimental-built-in-display-control` is `true` and at least one active, awake, extended external display is available. Mirrored configurations are refused. Turning the display on is always allowed.
+
+For an external display configuration that has not previously been confirmed, AeroSpace asks the user to keep the configuration and restores the built-in display after 15 seconds without confirmation.
+
+While AeroSpace owns the disabled state, it restores the built-in display when the last external display disconnects, AeroSpace is disabled or exits, the system sleeps or wakes, or the recovery helper detects that AeroSpace crashed. The configuration applies only to the current login session.
+
+Enable the experimental feature and add an optional service-mode binding:
+
+[source,toml]
+----
+enable-experimental-built-in-display-control = true
+
+[mode.service.binding]
+d = ['built-in-display', 'mode main']
+----
+
+// =========================================================== Arguments
+include::./util/conditional-arguments-header.adoc[]
+
+on:: Turn the built-in display on.
+off:: Turn the built-in display off if a usable external display is active.
+
+// end::body[]
+
+// =========================================================== Footer
+include::util/man-footer.adoc[]

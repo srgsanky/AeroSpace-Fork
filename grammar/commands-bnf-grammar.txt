@@ -12,6 +12,8 @@ aerospace -h;
 
     | balance-sizes [--workspace <workspace>]
 
+    | built-in-display [on|off]
+
     | close [--quit-if-last-window|--window-id <window_id>]...
 
     | close-all-windows-but-current [--quit-if-last-window]

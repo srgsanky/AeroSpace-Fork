@@ -29,6 +29,12 @@ final class ConfigTest: XCTestCase {
         assertEquals(result.warnings, [])
     }
 
+    func testParseExperimentalBuiltInDisplayControl() {
+        let result = parseConfig("enable-experimental-built-in-display-control = true")
+        assertEquals(result.errors, [])
+        assertTrue(result.config.enableExperimentalBuiltInDisplayControl)
+    }
+
     func testParseAccentSizePercentages() {
         let result = parseConfig(
             """

@@ -17,6 +17,10 @@ start-at-login = false
 # After setting this to true, reload once manually to start the auto-reloading
 auto-reload-config = false
 
+# Experimental: allow the built-in display to be disabled while an external
+# display is active. This uses an unsupported private macOS interface.
+enable-experimental-built-in-display-control = false
+
 # Normalizations. See: https://nikitabobko.github.io/AeroSpace/guide#normalization
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
@@ -229,6 +233,7 @@ gaps.outer.right =      0
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
 [mode.service.binding]
     esc = ['reload-config', 'mode main']
+    # d = ['built-in-display', 'mode main'] # Requires enable-experimental-built-in-display-control
     r = ['flatten-workspace-tree', 'mode main'] # reset layout
     f = ['layout floating tiling', 'mode main'] # Toggle between floating and tiling layout
     backspace = ['close-all-windows-but-current', 'mode main']

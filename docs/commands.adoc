@@ -19,6 +19,13 @@ include::aerospace-balance-sizes.adoc[tags=synopsis]
 include::aerospace-balance-sizes.adoc[tags=purpose]
 include::aerospace-balance-sizes.adoc[tags=body]
 
+== built-in-display
+----
+include::aerospace-built-in-display.adoc[tags=synopsis]
+----
+include::aerospace-built-in-display.adoc[tags=purpose]
+include::aerospace-built-in-display.adoc[tags=body]
+
 == close
 ----
 include::aerospace-close.adoc[tags=synopsis]

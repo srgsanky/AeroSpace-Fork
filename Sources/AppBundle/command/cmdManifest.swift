@@ -12,6 +12,8 @@ extension CmdArgs {
                 command = AccentCommand(args: self as! AccentCmdArgs)
             case .balanceSizes:
                 command = BalanceSizesCommand(args: self as! BalanceSizesCmdArgs)
+            case .builtInDisplay:
+                command = BuiltInDisplayCommand(args: self as! BuiltInDisplayCmdArgs)
             case .close:
                 command = CloseCommand(args: self as! CloseCmdArgs)
             case .closeAllWindowsButCurrent:

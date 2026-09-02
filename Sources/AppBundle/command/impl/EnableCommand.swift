@@ -24,6 +24,7 @@ struct EnableCommand: Command {
         }
 
         if !newState {
+            BuiltInDisplayController.shared.restoreForLifecycleEvent()
             await StashPickerController.shared.dismissIfOpen()
             await StashedWindows.restoreAllForDisable()
         }

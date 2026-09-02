@@ -3,6 +3,7 @@ import Common
 
 private struct MonitorImpl {
     let monitorAppKitNsScreenScreensId: Int
+    let displayId: CGDirectDisplayID?
     let name: String
     let rect: Rect
     let visibleRect: Rect
@@ -18,6 +19,7 @@ extension MonitorImpl: Monitor {
 protocol Monitor: AeroAny {
     /// The index in NSScreen.screens array. 1-based index
     var monitorAppKitNsScreenScreensId: Int { get }
+    var displayId: CGDirectDisplayID? { get }
     var name: String { get }
     var rect: Rect { get }
     var visibleRect: Rect { get }
@@ -29,6 +31,7 @@ protocol Monitor: AeroAny {
 final class LazyMonitor: Monitor {
     private let screen: NSScreen
     let monitorAppKitNsScreenScreensId: Int
+    let displayId: CGDirectDisplayID?
     let name: String
     let width: CGFloat
     let height: CGFloat
@@ -38,6 +41,7 @@ final class LazyMonitor: Monitor {
 
     init(monitorAppKitNsScreenScreensId: Int, isMain: Bool, _ screen: NSScreen) {
         self.monitorAppKitNsScreenScreensId = monitorAppKitNsScreenScreensId
+        self.displayId = screen.displayId
         self.name = screen.localizedName
         self.width = screen.frame.width // Don't call rect because it would cause recursion during mainMonitor init
         self.height = screen.frame.height // Don't call rect because it would cause recursion during mainMonitor init
@@ -62,6 +66,7 @@ extension NSScreen {
     fileprivate func toMonitor(monitorAppKitNsScreenScreensId: Int) -> Monitor {
         MonitorImpl(
             monitorAppKitNsScreenScreensId: monitorAppKitNsScreenScreensId,
+            displayId: displayId,
             name: localizedName,
             rect: rect,
             visibleRect: visibleRect,
@@ -71,6 +76,10 @@ extension NSScreen {
 
     fileprivate var isMainScreen: Bool {
         frame.minX == 0 && frame.minY == 0
+    }
+
+    fileprivate var displayId: CGDirectDisplayID? {
+        (deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber).map { CGDirectDisplayID($0.uint32Value) }
     }
 
     /// The property is a replacement for Apple's crazy ``frame``
@@ -88,6 +97,7 @@ extension NSScreen {
 private let testMonitorRect = Rect(topLeftX: 0, topLeftY: 0, width: 1920, height: 1080)
 private let testMonitor = MonitorImpl(
     monitorAppKitNsScreenScreensId: 1,
+    displayId: nil,
     name: "Test Monitor",
     rect: testMonitorRect,
     visibleRect: testMonitorRect,
@@ -101,6 +111,7 @@ func setTestMonitorRects(_ rects: [Rect]?) {
     unsafe testMonitorsOverride = rects?.enumerated().map { index, rect in
         MonitorImpl(
             monitorAppKitNsScreenScreensId: index + 1,
+            displayId: nil,
             name: "Test Monitor \(index + 1)",
             rect: rect,
             visibleRect: rect,

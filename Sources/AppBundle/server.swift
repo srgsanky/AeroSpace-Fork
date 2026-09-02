@@ -69,7 +69,7 @@ private func newConnection(_ connection: NWConnection) async { // todo add exit 
             continue
         }
         let parsedCmd = parseCommand(request.args)
-        guard let token: RunSessionGuard = await .isServerEnabled(orIsEnableCommand: parsedCmd.cmdOrNil) else {
+        guard let token: RunSessionGuard = await .isServerEnabled(orIsAlwaysAvailableCommand: parsedCmd.cmdOrNil) else {
             await answerToClient(
                 exitCode: EXIT_CODE_TWO,
                 stderr: "\(aeroSpaceAppName) server is disabled and doesn't accept commands. " +

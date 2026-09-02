@@ -145,6 +145,7 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     "start-at-login": Parser(\.startAtLogin, parseBool),
     "auto-reload-config": Parser(\.autoReloadConfig, parseBool),
     "automatically-unhide-macos-hidden-apps": Parser(\.automaticallyUnhideMacosHiddenApps, parseBool),
+    "enable-experimental-built-in-display-control": Parser(\.enableExperimentalBuiltInDisplayControl, parseBool),
     "accordion-padding": Parser(\.accordionPadding, parseInt),
     "accent-width-percent": Parser(\.accentWidthRatio, parsePercentage),
     "accent-height-percent": Parser(\.accentHeightRatio, parsePercentage),

@@ -2,6 +2,8 @@
 #define private_header_h
 
 #import <ApplicationServices/ApplicationServices.h>
+#import <stdbool.h>
+#import <stdint.h>
 
 // Potential alternative 1?
 // func allWindowsOnCurrentMacOsSpace() {
@@ -24,5 +26,12 @@
 // @discardableResult
 // func _AXUIElementGetWindow(_ axUiElement: AXUIElement, _ id: inout CGWindowID) -> AXError
 AXError _AXUIElementGetWindow(AXUIElementRef element, uint32_t *identifier);
+
+/// Dynamically resolved private CoreGraphics functions used for experimental
+/// built-in display control. Keeping resolution in this bridge lets AeroSpace
+/// fail closed when Apple removes or changes either symbol.
+bool AeroPrivateDisplayControlIsAvailable(void);
+CGError AeroPrivateGetDisplayList(uint32_t maxDisplays, CGDirectDisplayID *displays, uint32_t *displayCount);
+CGError AeroPrivateConfigureDisplayEnabled(CGDisplayConfigRef config, CGDirectDisplayID display, bool enabled);
 
 #endif
