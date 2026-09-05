@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+# Homebrew runs `brew cleanup` automatically every HOMEBREW_CLEANUP_PERIODIC_FULL_DAYS.
+# That is unrelated to building AeroSpace, and a single unremovable keg anywhere in the
+# Cellar fails the whole install, so keep it out of this script's install steps.
+export HOMEBREW_NO_INSTALL_CLEANUP=1
+export HOMEBREW_NO_ENV_HINTS=1
+
 if ((BASH_VERSINFO[0] < 5)); then
     for candidate in /opt/homebrew/bin/bash /usr/local/bin/bash; do
         if [[ -x "$candidate" ]]; then
