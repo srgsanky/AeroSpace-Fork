@@ -27,7 +27,9 @@ Turning the display off is experimental and uses an unsupported private CoreGrap
 
 For an external display configuration that has not previously been confirmed, AeroSpace asks the user to keep the configuration and restores the built-in display after 15 seconds without confirmation.
 
-While AeroSpace owns the disabled state, it restores the built-in display when the last external display disconnects, AeroSpace is disabled or exits, the system sleeps or wakes, or the recovery helper detects that AeroSpace crashed. The configuration applies only to the current login session.
+While AeroSpace owns the disabled state, it restores the built-in display when the last external display disconnects, AeroSpace is disabled or exits, or the recovery helper detects that AeroSpace crashed. The configuration applies only to the current login session.
+
+System sleep, screen lock and login do not restore the built-in display. macOS turns the panel back on across those transitions on its own, so AeroSpace re-applies the disabled state once the screen is unlocked and the external displays have finished re-enumerating. Re-application never prompts for confirmation again, still requires an active, awake external display, and gives up after three attempts within five minutes rather than fighting another display tool indefinitely.
 
 Enable the experimental feature and add an optional service-mode binding:
 

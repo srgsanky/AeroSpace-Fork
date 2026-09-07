@@ -23,7 +23,18 @@ final class BuiltInDisplayHelperPolicyTest: XCTestCase {
     }
 
     func testRestoresWhenLastExternalIsDetached() {
-        assertEquals(decide(isArmed: true, hasAttachedExternal: false), .restore)
+        assertEquals(decide(isArmed: true, externalMissingElapsed: 10), .restore)
+    }
+
+    /// A wake re-enumerates displays over several seconds. Reading the first
+    /// empty poll as a disconnect restored the panel on every wake; while the
+    /// parent is alive its own blackout rescue covers a real dark desktop.
+    func testWaitsOutATransientlyEmptyExternalListWhileParentIsAlive() {
+        assertEquals(decide(isArmed: true, externalMissingElapsed: 1), .wait)
+    }
+
+    func testRestoresImmediatelyWhenParentIsDeadAndExternalIsMissing() {
+        assertEquals(decide(isArmed: true, parentIsAlive: false, externalMissingElapsed: 0.5), .restore)
     }
 
     func testRestoresWhenParentDiesWhilePanelIsDark() {
@@ -37,7 +48,7 @@ final class BuiltInDisplayHelperPolicyTest: XCTestCase {
     /// A transiently empty external list during the parent's own transition is
     /// not a disconnect; restoring there would fight the parent.
     func testArmingIgnoresTransientlyMissingExternal() {
-        assertEquals(decide(isArmed: false, armingElapsed: 0.2, hasAttachedExternal: false), .wait)
+        assertEquals(decide(isArmed: false, armingElapsed: 0.2, externalMissingElapsed: 10), .wait)
     }
 
     func testHoldsWhilePanelIsDarkAndSetupIsHealthy() {
@@ -50,7 +61,7 @@ final class BuiltInDisplayHelperPolicyTest: XCTestCase {
         parentIsAlive: Bool = true,
         armingElapsed: TimeInterval = 0.1,
         confirmationExpired: Bool = false,
-        hasAttachedExternal: Bool = true,
+        externalMissingElapsed: TimeInterval = 0,
     ) -> BuiltInDisplayHelperAction {
         BuiltInDisplayHelperPolicy.decide(
             builtInIsActive: builtInIsActive,
@@ -58,7 +69,7 @@ final class BuiltInDisplayHelperPolicyTest: XCTestCase {
             parentIsAlive: parentIsAlive,
             armingElapsed: armingElapsed,
             confirmationExpired: confirmationExpired,
-            hasAttachedExternal: hasAttachedExternal,
+            externalMissingElapsed: externalMissingElapsed,
         )
     }
 }

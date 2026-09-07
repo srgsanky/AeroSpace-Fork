@@ -208,9 +208,10 @@ Enable the built-in display before or during:
 - Normal AeroSpace termination.
 - AeroSpace's `enable off` transition.
 - Application restart when a stale recovery marker exists.
-- System wake, before relying on a post-wake external inventory.
 
-On wake, safety takes priority over preserving the previous disabled state. AeroSpace must not automatically turn the display off again; the user may invoke the command after the external display is stable.
+Sleep, wake, screen lock and login do not restore the panel (see `built-in-display-sleep-persistence.md`). Superseded: the original rule restored on wake and told the user to re-invoke the command, which made the feature useless on a machine that sleeps -- and restoring nothing would not have been enough on its own either, because the system is assumed to re-enable the panel across login independently of what AeroSpace does. Safety now rides entirely on attachment, which is the property that actually distinguishes a recoverable desktop from a black one, and is enforced by the blackout rescue and the recovery helper regardless of power state.
+
+Instead the disabled state is re-applied after wake and unlock, gated on the same precondition as the original turn-off (an active, awake external), deferred until the screen is unlocked and display enumeration has settled, never re-prompting for confirmation, and bounded by an attempt budget so a disagreement with another display tool ends in the safe state rather than in a flapping desktop.
 
 ### 8. Emergency recovery
 
@@ -374,7 +375,9 @@ Test on every supported macOS major version and at least these configurations:
 8. External display asleep or powered off at invocation.
 9. USB-C or Thunderbolt dock disconnect.
 10. DisplayPort/HDMI cable disconnect without dock removal.
-11. System sleep and wake while the built-in display is disabled.
+11. System sleep and wake while the built-in display is disabled: the panel stays off, and is turned back off shortly after unlock if the system re-enabled it.
+11a. Sleep, then disconnect the external display while asleep, then wake: built-in restores.
+11b. Screen lock and unlock without sleeping.
 12. AeroSpace normal quit while disabled.
 13. Force-kill AeroSpace while disabled and verify helper recovery.
 14. Force-kill both AeroSpace and the helper, then verify startup-marker recovery.

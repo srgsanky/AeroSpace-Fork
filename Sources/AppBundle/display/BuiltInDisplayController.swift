@@ -17,6 +17,26 @@ private let blackoutRescueDebounce: TimeInterval = 0.75
 /// Verifying a disable competes with WindowServer reconfiguration, which needs
 /// more than the budget a plain state read does.
 private let disableVerificationTimeout: TimeInterval = 2.5
+/// How long after a wake or an unlock the controller waits before re-asserting
+/// the disabled state. Display enumeration is still settling right after those,
+/// and a disable issued mid-reconfiguration is the flakiest thing we can do.
+private let reassertSettleDelay: TimeInterval = 2
+/// Re-assertion budget. If something else keeps turning the panel back on,
+/// stop fighting it rather than flapping the desktop for the rest of the login
+/// session.
+private let maxReassertAttempts = 3
+private let reassertAttemptWindow: TimeInterval = 300
+/// How long a re-asserted disable has to hold before the attempt budget is
+/// refilled. The budget exists to catch a flapping fight, which cycles in
+/// seconds; a disable that survives this long won its argument, and a machine
+/// that sleeps often should not run out of attempts because of it.
+private let reassertBudgetResetInterval: TimeInterval = 60
+/// How long the helper requires the external list to stay empty before reading
+/// it as a disconnect. Only applies while the parent is alive -- and while it
+/// is, its own 0.75s blackout rescue already covers a genuinely dark desktop,
+/// so this costs no safety and keeps the helper from restoring the panel during
+/// the seconds a wake spends re-enumerating displays.
+private let helperDisconnectDebounce: TimeInterval = 2.5
 /// macOS synthesizes a placeholder framebuffer when the last real display is
 /// detached, so the session survives with nothing physically attached. It
 /// enumerates as an active, online, non-built-in display and would otherwise
@@ -165,6 +185,54 @@ enum BuiltInDisplayPolicy {
     }
 }
 
+enum BuiltInDisplayReassertAction: Equatable, Sendable {
+    /// Turn the panel back off: it is on, but the user asked for it to be off
+    /// and the safety preconditions hold again.
+    case reassert
+    /// Leave it alone for now and look again on the next tick.
+    case hold
+    /// Give up on the intent. Something keeps re-enabling the panel and losing
+    /// that argument quietly beats flapping the desktop.
+    case abandon
+}
+
+/// Decides whether to re-apply a disabled built-in display that came back on
+/// its own. macOS re-enables the panel across sleep, screen lock and login, so
+/// the hardware state is not a reliable record of what the user asked for; the
+/// intent is, and this is where it gets reconciled. Pure so the loop-avoidance
+/// cases are testable without hardware.
+enum BuiltInDisplayReassertPolicy {
+    static func decide(
+        wantsBuiltInOff: Bool,
+        builtInIsActive: Bool,
+        isScreenLocked: Bool,
+        hasAttachedExternal: Bool,
+        canTurnOff: Bool,
+        hasSettled: Bool,
+        recentAttempts: Int,
+    ) -> BuiltInDisplayReassertAction {
+        guard wantsBuiltInOff else { return .hold }
+        // Already how the user wants it. Not an attempt, not a failure.
+        guard builtInIsActive else { return .hold }
+        guard recentAttempts < maxReassertAttempts else { return .abandon }
+        // The lock screen owns the display configuration until the user is back,
+        // and reconfiguring underneath it buys nothing they can see. Displays are
+        // still re-enumerating for a second or two after a wake, so nothing below
+        // this line should trust the inventory before it settles.
+        guard !isScreenLocked, hasSettled else { return .hold }
+        // Settled, unlocked, panel on, nothing external attached: the user is
+        // working on the built-in display and the intent is spent. Keeping it
+        // would blank the panel out from under them the moment they plug a
+        // display back in, which is not something they asked for.
+        guard hasAttachedExternal else { return .abandon }
+        // An attached but sleeping or mirrored external fails the same
+        // precondition the original turn-off had. Wait for it rather than
+        // spending the intent on a state that is still resolving.
+        guard canTurnOff else { return .hold }
+        return .reassert
+    }
+}
+
 enum BuiltInDisplayHelperAction: Equatable, Sendable {
     /// The panel is genuinely back. Drop the lease and exit.
     case retire
@@ -183,7 +251,7 @@ enum BuiltInDisplayHelperPolicy {
         parentIsAlive: Bool,
         armingElapsed: TimeInterval,
         confirmationExpired: Bool,
-        hasAttachedExternal: Bool,
+        externalMissingElapsed: TimeInterval,
     ) -> BuiltInDisplayHelperAction {
         // A lease with no armedAt is still arming: the parent wrote it but has
         // not yet verified the panel went dark. The helper reaches its first
@@ -194,7 +262,10 @@ enum BuiltInDisplayHelperPolicy {
         if builtInIsActive { return isArming ? .wait : .retire }
         // While arming, a momentarily asleep or re-enumerating external must not
         // read as a disconnect: that would fight the transition the parent runs.
-        if !parentIsAlive || confirmationExpired || (!hasAttachedExternal && !isArming) { return .restore }
+        // The same holds after a wake, which is why the disconnect needs to
+        // persist rather than being believed on its first poll.
+        let isDisconnected = externalMissingElapsed >= helperDisconnectDebounce && !isArming
+        if !parentIsAlive || confirmationExpired || isDisconnected { return .restore }
         return .wait
     }
 }
@@ -268,6 +339,11 @@ private final class CoreGraphicsBuiltInDisplayAdapter {
 private struct BuiltInDisplayRecoveryLease: Codable {
     let parentPid: Int32
     let builtInDisplayId: CGDirectDisplayID
+    /// Identifies the generation of the lease. Re-assertion retires one lease
+    /// and starts another, and the outgoing helper can outlive the terminate()
+    /// that retired it; without this it would delete its successor's file and
+    /// leave the next disable unguarded.
+    let token: String?
     let confirmationDeadline: Date?
     /// When the parent verified the panel actually went dark. While this is nil
     /// the lease is still arming, and the helper must not retire it merely
@@ -298,6 +374,18 @@ final class BuiltInDisplayController: NSObject {
     /// is detached, but CGSConfigureDisplayEnabled still accepts the remembered
     /// ID -- verified on hardware.
     private var disabledBuiltInDisplayId: CGDirectDisplayID?
+    /// What the user asked for, as opposed to what the hardware currently
+    /// reports. macOS re-enables a disabled panel across system sleep, screen
+    /// lock and login, so the intent has to outlive the state and be re-applied.
+    private var wantsBuiltInDisplayOff = false
+    /// Timestamps of recent re-assertions, used to bound the fight.
+    private var reassertAttempts: [Date] = []
+    /// Since when the panel has stayed dark while the intent says it should be.
+    private var disabledStateHoldingSince: Date?
+    /// Set on wake and unlock: re-assertion waits for display enumeration to
+    /// settle rather than racing WindowServer.
+    private var reassertNotBefore: Date?
+    private var leaseToken: String?
     private var recoveryHelper: Process?
     private var observerTokens: [NSObjectProtocol] = []
     private var isStarted = false
@@ -322,10 +410,31 @@ final class BuiltInDisplayController: NSObject {
             Task.startUnstructured { @MainActor in BuiltInDisplayController.shared.handleDisplayInventoryChange() }
         })
 
+        // Sleep and wake deliberately do not restore the panel: an attached
+        // external is still attached across a sleep, and turning the built-in
+        // display back on every time the machine naps defeats the whole point of
+        // having turned it off. Safety keeps riding on attachment instead --
+        // rescueFromBlackoutIfNeeded and the recovery helper both restore the
+        // moment nothing else is drawable, whether the machine is asleep or not.
         let workspaceNotifications = NSWorkspace.shared.notificationCenter
-        for notification in [NSWorkspace.willSleepNotification, NSWorkspace.didWakeNotification] {
+        for notification in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
             observerTokens.append(workspaceNotifications.addObserver(forName: notification, object: nil, queue: .main) { _ in
-                Task.startUnstructured { @MainActor in BuiltInDisplayController.shared.restoreForLifecycleEvent() }
+                Task.startUnstructured { @MainActor in BuiltInDisplayController.shared.deferReassertion() }
+            })
+        }
+
+        // Unlocking reconfigures the displays again, so it restarts the settle
+        // window. The lock *state* is read from the session rather than tracked
+        // from these notifications: a missed unlock would otherwise wedge
+        // re-assertion off for the rest of the session.
+        let distributedNotifications = DistributedNotificationCenter.default()
+        for name in ["com.apple.screenIsLocked", "com.apple.screenIsUnlocked"] {
+            observerTokens.append(distributedNotifications.addObserver(
+                forName: Notification.Name(name),
+                object: nil,
+                queue: .main,
+            ) { _ in
+                Task.startUnstructured { @MainActor in BuiltInDisplayController.shared.deferReassertion() }
             })
         }
 
@@ -336,8 +445,22 @@ final class BuiltInDisplayController: NSObject {
         refreshMenuState()
     }
 
+    /// Wake and unlock both land while the display list is still churning.
+    /// Hold re-assertion until it settles.
+    func deferReassertion() {
+        reassertNotBefore = Date().addingTimeInterval(reassertSettleDelay)
+    }
+
+    /// Whether the login window is currently covering the session. Read live so
+    /// a dropped lock/unlock notification cannot leave the controller believing
+    /// the screen is still locked.
+    private var isScreenLocked: Bool {
+        guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return false }
+        return session["CGSSessionScreenIsLocked"] as? Bool ?? false
+    }
+
     func configDidReload() {
-        if !config.enableExperimentalBuiltInDisplayControl, ownsDisableLease {
+        if !config.enableExperimentalBuiltInDisplayControl, ownsDisableLease || wantsBuiltInDisplayOff {
             _ = apply(.on)
         } else {
             refreshMenuState()
@@ -387,10 +510,15 @@ final class BuiltInDisplayController: NSObject {
 
         if snapshot.builtIn?.isActive == true {
             pendingRestore = false
+            disabledStateHoldingSince = nil
+            if reassertDisabledStateIfNeeded(snapshot) { return }
             if ownsDisableLease { stopRecoveryLease() }
             refreshMenuState(using: snapshot)
             return
         }
+        // Below here the panel is dark or gone. If that is what was asked for and
+        // it has held, the fight is over and the attempt budget can be refilled.
+        noteDisabledStateHolding()
         if pendingRestore {
             _ = apply(.on)
             return
@@ -400,6 +528,16 @@ final class BuiltInDisplayController: NSObject {
             return
         }
         if snapshot.attachedExternals.isEmpty {
+            // Right after a wake or an unlock an empty external list is usually
+            // re-enumeration rather than a disconnect, and believing it here
+            // restores the panel -- the exact behavior this design set out to
+            // stop. Nothing is risked by waiting: with the panel dark and no
+            // external attached the desktop is black, and rescueFromBlackout-
+            // IfNeeded above restores it within 0.75s regardless of this window.
+            if Date() < (reassertNotBefore ?? .distantPast) {
+                refreshMenuState(using: snapshot)
+                return
+            }
             _ = apply(.on)
             return
         }
@@ -426,7 +564,58 @@ final class BuiltInDisplayController: NSObject {
         return true
     }
 
+    private func noteDisabledStateHolding() {
+        guard wantsBuiltInDisplayOff else {
+            disabledStateHoldingSince = nil
+            return
+        }
+        let since = disabledStateHoldingSince ?? Date()
+        disabledStateHoldingSince = since
+        if Date().timeIntervalSince(since) >= reassertBudgetResetInterval { reassertAttempts = [] }
+    }
+
+    /// Re-applies a disable that the system undid. Returns true when it acted,
+    /// so the caller does not go on to interpret the panel being on as the user
+    /// having asked for it back and drop the lease.
+    private func reassertDisabledStateIfNeeded(_ snapshot: ManagedDisplaySnapshot) -> Bool {
+        let now = Date()
+        reassertAttempts.removeAll { now.timeIntervalSince($0) > reassertAttemptWindow }
+        let action = BuiltInDisplayReassertPolicy.decide(
+            wantsBuiltInOff: wantsBuiltInDisplayOff,
+            builtInIsActive: snapshot.builtIn?.isActive == true,
+            isScreenLocked: isScreenLocked,
+            hasAttachedExternal: !snapshot.attachedExternals.isEmpty,
+            canTurnOff: config.enableExperimentalBuiltInDisplayControl
+                && adapter.isAvailable
+                && BuiltInDisplayPolicy.validateTurningOff(snapshot) == nil,
+            hasSettled: now >= (reassertNotBefore ?? .distantPast),
+            recentAttempts: reassertAttempts.count,
+        )
+        switch action {
+            case .hold:
+                return false
+            case .abandon:
+                wantsBuiltInDisplayOff = false
+                reassertAttempts = []
+                return false
+            case .reassert:
+                guard let builtIn = snapshot.builtIn else { return false }
+                reassertAttempts.append(now)
+                // The lease and helper from the original turn-off are stale: they
+                // are watching a panel that is currently on, and a second helper
+                // racing the first over one lease file ends with the survivor
+                // deleting it. Retire that generation and let turnOff arm a fresh
+                // one for the transition it is about to run.
+                if ownsDisableLease { stopRecoveryLease() }
+                // Never prompt here. The user already confirmed this topology;
+                // a modal every time the machine wakes is its own bug.
+                _ = turnOff(initialSnapshot: snapshot, builtIn: builtIn, skipConfirmation: true)
+                return true
+        }
+    }
+
     func restoreForLifecycleEvent() {
+        wantsBuiltInDisplayOff = false
         guard ownsDisableLease || FileManager.default.fileExists(atPath: builtInDisplayLeaseUrl.path) else {
             refreshMenuState()
             return
@@ -437,6 +626,7 @@ final class BuiltInDisplayController: NSObject {
     private func turnOff(
         initialSnapshot: ManagedDisplaySnapshot,
         builtIn: ManagedDisplayDescriptor,
+        skipConfirmation: Bool = false,
     ) -> BuiltInDisplayActionResult {
         guard config.enableExperimentalBuiltInDisplayControl else {
             return .refused(
@@ -461,7 +651,7 @@ final class BuiltInDisplayController: NSObject {
         guard let currentBuiltIn = snapshot.builtIn, currentBuiltIn.isActive else { return .noOp(isEnabled: false) }
 
         let topologyFingerprint = trustedTopologyFingerprint(snapshot.usableExternals)
-        let requiresConfirmation = !trustedTopologies.contains(topologyFingerprint)
+        let requiresConfirmation = !skipConfirmation && !trustedTopologies.contains(topologyFingerprint)
         let deadline = requiresConfirmation ? Date().addingTimeInterval(confirmationTimeout) : nil
 
         isTransitioning = true
@@ -508,6 +698,10 @@ final class BuiltInDisplayController: NSObject {
                 persistTrustedTopologies()
                 try updateRecoveryLease(displayId: currentBuiltIn.id, confirmationDeadline: nil, armedAt: Date())
             }
+            // Record the intent only once the panel is verified dark, so a
+            // transition that never took hold cannot leave the controller trying
+            // to restore a state that was never reached.
+            wantsBuiltInDisplayOff = true
             return .changed(isEnabled: false)
         } catch {
             rollBackToBuiltInEnabled(displayId: currentBuiltIn.id)
@@ -517,6 +711,7 @@ final class BuiltInDisplayController: NSObject {
 
     private func turnOn(builtIn: ManagedDisplayDescriptor) -> BuiltInDisplayActionResult {
         if builtIn.isActive {
+            wantsBuiltInDisplayOff = false
             stopRecoveryLease()
             refreshMenuState()
             return .noOp(isEnabled: true)
@@ -542,6 +737,10 @@ final class BuiltInDisplayController: NSObject {
     }
 
     private func turnOnWithoutTransitionGuard(displayId: CGDirectDisplayID) -> BuiltInDisplayActionResult {
+        // Every path that reaches here -- an explicit request, a rescue, a
+        // stale-lease repair -- wants the panel on. Drop the intent first, or
+        // the poller re-asserts the disable a second later and undoes it.
+        wantsBuiltInDisplayOff = false
         do {
             try adapter.setEnabled(true, displayId: displayId)
             guard waitForPostcondition({ $0.builtIn?.isActive == true }) else {
@@ -561,6 +760,7 @@ final class BuiltInDisplayController: NSObject {
     /// once the built-in display is verified active again: a swallowed rollback
     /// failure must never disarm the watchdogs while the panel is still dark.
     private func rollBackToBuiltInEnabled(displayId: CGDirectDisplayID) {
+        wantsBuiltInDisplayOff = false
         try? adapter.setEnabled(true, displayId: displayId)
         if waitForPostcondition({ $0.builtIn?.isActive == true }) {
             pendingRestore = false
@@ -638,6 +838,8 @@ final class BuiltInDisplayController: NSObject {
     }
 
     private func startRecoveryLease(displayId: CGDirectDisplayID, confirmationDeadline: Date?) throws {
+        let token = UUID().uuidString
+        leaseToken = token
         try updateRecoveryLease(displayId: displayId, confirmationDeadline: confirmationDeadline, armedAt: nil)
 
         guard let executable = Bundle.main.executableURL ?? CommandLine.arguments.first.map({ URL(filePath: $0) }) else {
@@ -650,6 +852,7 @@ final class BuiltInDisplayController: NSObject {
             builtInDisplayRecoveryHelperFlag,
             String(ProcessInfo.processInfo.processIdentifier),
             String(displayId),
+            token,
         ]
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
@@ -666,6 +869,7 @@ final class BuiltInDisplayController: NSObject {
         let lease = BuiltInDisplayRecoveryLease(
             parentPid: ProcessInfo.processInfo.processIdentifier,
             builtInDisplayId: displayId,
+            token: leaseToken,
             confirmationDeadline: confirmationDeadline,
             armedAt: armedAt,
         )
@@ -677,6 +881,7 @@ final class BuiltInDisplayController: NSObject {
     private func stopRecoveryLease() {
         ownsDisableLease = false
         disabledBuiltInDisplayId = nil
+        leaseToken = nil
         try? FileManager.default.removeItem(at: builtInDisplayLeaseUrl)
         if recoveryHelper?.isRunning == true { recoveryHelper?.terminate() }
         recoveryHelper = nil
@@ -742,25 +947,32 @@ public func runBuiltInDisplayRecoveryHelperIfRequested() -> Bool {
           let displayIdString = args.getOrNil(atIndex: 3),
           let displayId = CGDirectDisplayID(displayIdString)
     else { return true }
+    let token = args.getOrNil(atIndex: 4)
 
     let adapter = CoreGraphicsBuiltInDisplayAdapter()
     let startedAt = Date()
+    var externalMissingSince: Date?
     while FileManager.default.fileExists(atPath: builtInDisplayLeaseUrl.path) {
         let lease: BuiltInDisplayRecoveryLease? = {
             guard let data = try? Data(contentsOf: builtInDisplayLeaseUrl) else { return nil }
             return try? JSONDecoder().decode(BuiltInDisplayRecoveryLease.self, from: data)
         }()
+        // A newer generation of the lease means this helper was retired and the
+        // file on disk belongs to its successor. Leave without touching it.
+        if let token, let leaseToken = lease?.token, leaseToken != token { return true }
         let leaseParentPid = lease?.parentPid ?? parentPid
         let parentIsAlive = kill(leaseParentPid, 0) == 0 || errno == EPERM
         let snapshot = try? adapter.snapshot()
+        // A failed snapshot must not read as a disconnect.
+        let hasAttachedExternal = snapshot.map { !$0.attachedExternals.isEmpty } ?? true
+        externalMissingSince = hasAttachedExternal ? nil : (externalMissingSince ?? Date())
         let action = BuiltInDisplayHelperPolicy.decide(
             builtInIsActive: snapshot?.builtIn?.isActive == true,
             isArmed: lease?.armedAt != nil,
             parentIsAlive: parentIsAlive,
             armingElapsed: Date().timeIntervalSince(startedAt),
             confirmationExpired: lease?.confirmationDeadline.map { $0 <= Date() } == true,
-            // A failed snapshot must not read as a disconnect.
-            hasAttachedExternal: snapshot.map { !$0.attachedExternals.isEmpty } ?? true,
+            externalMissingElapsed: externalMissingSince.map { Date().timeIntervalSince($0) } ?? 0,
         )
         switch action {
             case .retire:
